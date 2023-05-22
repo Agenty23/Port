@@ -6,6 +6,10 @@ from spade.template import Template
 
 CLIENT_REQUEST = Template()
 CLIENT_REQUEST.set_metadata("propose", "get_proposal")
+
+def log(name, message):
+    print("[",datetime.datetime.now(),"] ",name," ",message)
+
 class PortAgent(Agent):
 
     class RecvBehav(CyclicBehaviour):
@@ -14,15 +18,15 @@ class PortAgent(Agent):
 
             msg = await self.receive(timeout=10)
             if msg:
-                print(self.agent.__class__,"Message received with content: {}".format(msg.body))
-                if msg.match(CLIENT_REQUEST):#str(msg.sender) == "test_agent@jabbim.pl/2":
+                log(self.agent.agent_name,"Message received with content: {}".format(msg.body))
+                if str(msg.sender) == "test_agent@jabbim.pl/2": #msg.match(CLIENT_REQUEST):
                     #message from client
                     for stainer in self.agent.transtainers:
                         snd = Message(to=stainer)
                         snd.set_metadata("internal", "container_request")
                         snd.body = msg.body
                         await self.send(snd)
-                        print("Request sent to transtainer!")
+                        log(self.agent.agent_name,"Request sent to transtainer!")
                 elif str(msg.sender) in {"test_agent@jabbim.pl/3","test_agent@jabbim.pl/4","test_agent@jabbim.pl/5"}:
                     # Message from transtainer
                     if(msg.body != "No"):
@@ -30,7 +34,7 @@ class PortAgent(Agent):
                         ans.set_metadata("internal", "container_request")
                         ans.body = "YES"
                         await self.send(ans)
-                        print("Answer sent to client!")
+                        log(self.agent.agent_name,"Answer sent to client!")
                 else:
                     pass
   
@@ -46,4 +50,7 @@ class PortAgent(Agent):
         self.transtainers = {"test_agent@jabbim.pl/3","test_agent@jabbim.pl/4","test_agent@jabbim.pl/5"}
         b = self.RecvBehav()
         self.add_behaviour(b)
+
+    def set_name(self,name):
+        self.agent_name = name
         

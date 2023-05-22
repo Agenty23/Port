@@ -23,7 +23,7 @@ class OperatorAgent(Agent):
                 print(c)
             print("Collection: ",self.collection)
             print("\n")
-            msg = Message(to="test_agent@jabbim.pl/1")
+            msg = Message(to="port@jabbim.pl")
 
             msg.set_metadata("propose", "get_proposal")
             msg.body = f"{self.containerID[0]},{self.collection.strftime('%d-%m-%Y')}"
@@ -35,7 +35,7 @@ class OperatorAgent(Agent):
 
             msg = await self.receive(timeout=10)
             if msg:
-                print("Message received with content: {}".format(msg.body))
+                print("Client received with content: {}".format(msg.body))
             else:
                 print("Did not received any message after: {} seconds".format(message_wait_timeout))
 
