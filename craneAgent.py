@@ -2,10 +2,21 @@ import random
 from typing import List
 from loggingAgent import LoggingAgent
 from spade.message import Message
+from spade.template import Template
 from spade.behaviour import FSMBehaviour, State, PeriodicBehaviour, CyclicBehaviour, OneShotBehaviour
 import datetime
 
+PICKUP_PROPOSAL = Template()
+PICKUP_PROPOSAL.set_metadata("internal", "crane_price_request")
+
+DROPOFF_PROPOSAL = Template()
+DROPOFF_PROPOSAL.set_metadata("internal", "crane_dropoff_request")
+
+TRANSTAINER_JOIN_REQUEST = Template()
+TRANSTAINER_JOIN_REQUEST.set_metadata("join", "crane_join_request")
+
 class CraneAgent(LoggingAgent):
+
     def __init__(self, jid, password, port_jid):
         super().__init__(jid, password)
         self.port_jid = str(port_jid)
@@ -28,7 +39,15 @@ class CraneAgent(LoggingAgent):
             message_wait_timeout = 100
 
             msg = await self.receive(timeout=100)
-            if msg:
+            if not msg:
+                log("Did not received any message after: {} seconds".format(message_wait_timeout))
+                return
+
+            if TRANSTAINER_JOIN_REQUEST.match(msg):
+                self.agent.transtainers.append(str(msg.sender))
+                log(f"Transtainer [{str(msg.sender)}] joined")
+                
+            elif PICKUP_PROPOSAL.match(msg):
                 log("Message received with content: {}".format(msg.body))
                 res = Message(to=str(msg.sender))
                 res.set_metadata("internal","crane_offer")
@@ -36,14 +55,16 @@ class CraneAgent(LoggingAgent):
                 res.body = str(random.randint(20,100))
                 await self.send(res)
 
-            else:
-                log("Did not received any message after: {} seconds".format(message_wait_timeout))
+            elif DROPOFF_PROPOSAL.match(msg):
+                log("Message received with content: {}".format(msg.body))
+                
 
     async def setup(self):
         log = self.log
         log("Crane agent started")
         b = self.JoinPortBehav()
         self.add_behaviour(b)
+        self.transtainers = []
     
     def set_name(self,name):
         self.agent_name = name

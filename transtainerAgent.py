@@ -28,6 +28,18 @@ class TranstainerAgent(LoggingAgent):
             log("Join request sent to port agent")
         
         async def on_end(self):
+            self.agent.add_behaviour(self.agent.JoinCraneBehav())
+
+    class JoinCraneBehav(OneShotBehaviour):
+        async def run(self):
+            log = self.agent.log
+            msg = Message(to=self.agent.crane_jid)
+            msg.set_metadata("join", "crane_join_request")
+            msg.body = "transtainer"
+            await self.send(msg)
+            log(f"Join request sent to crane [{self.agent.crane_jid}]")
+        
+        async def on_end(self):
             self.agent.add_behaviour(self.agent.RecvBehav())
     
     class RecvBehav(CyclicBehaviour):
