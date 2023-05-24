@@ -1,6 +1,6 @@
 from operator import contains
 from typing import List
-from spade.agent import Agent
+from loggingAgent import LoggingAgent
 from spade.message import Message
 from spade.behaviour import FSMBehaviour, State, PeriodicBehaviour, OneShotBehaviour, CyclicBehaviour
 import datetime
@@ -11,11 +11,8 @@ CONTAINER_REQUEST.set_metadata("internal", "container_request")
 CRANE_PROPOSAL = Template()
 CRANE_PROPOSAL.set_metadata("internal","crane_offer")
 
-def log(name, message):
-    print("[",datetime.datetime.now(),"] ",name," ",message)
 
-
-class TranstainerAgent(Agent):
+class TranstainerAgent(LoggingAgent):
     def __init__(self, jid, password, port_jid, crane_jid):
         super().__init__(jid, password)
         self.port_jid = str(port_jid)
@@ -23,23 +20,25 @@ class TranstainerAgent(Agent):
 
     class JoinPortBehav(OneShotBehaviour):
         async def run(self):
+            log = self.agent.log
             msg = Message(to=self.agent.port_jid)
             msg.set_metadata("join", "join_request")
             msg.body = "transtainer"
             await self.send(msg)
-            print("Join request sent to port agent")
+            log("Join request sent to port agent")
         
         async def on_end(self):
             self.agent.add_behaviour(self.agent.RecvBehav())
     
     class RecvBehav(CyclicBehaviour):
         async def run(self):
+            log = self.agent.log
             message_wait_timeout = 100
             port_jid = self.agent.port_jid
 
             msg = await self.receive(timeout=100)
             if msg:
-                log(self.agent.agent_name,"Message received with content: {} from: {}".format(msg.body,msg.sender))
+                log("Message received with content: {} from: {}".format(msg.body,msg.sender))
                 if CONTAINER_REQUEST.match(msg):
                     # Got message from Port agent with request for some container
                     if msg.body.split(',')[0] in self.agent.containers:
@@ -50,7 +49,7 @@ class TranstainerAgent(Agent):
                         crane_req.body = msg.body.split(',')[1]
                         await self.send(crane_req)
                     else:
-                        log(self.agent.agent_name,"Container not here")
+                        log("Container not here")
                         response = Message(to=str(msg.sender))
                         response.set_metadata("internal", "negative")
                         response.set_metadata("client_jid", msg.get_metadata("client_jid"))
@@ -72,11 +71,12 @@ class TranstainerAgent(Agent):
                         response.body = "No"
                         await self.send(response)
             else:
-                print("Did not received any message after: {} seconds".format(message_wait_timeout))
+                log("Did not received any message after: {} seconds".format(message_wait_timeout))
 
     
     async def setup(self):
-        print("Transtainer agent started")
+        log = self.log
+        log("Transtainer agent started")
         self.containers : List[str] = []
         b = self.JoinPortBehav()
         self.add_behaviour(b)

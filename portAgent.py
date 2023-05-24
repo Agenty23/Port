@@ -1,7 +1,6 @@
-from spade.agent import Agent
+from loggingAgent import LoggingAgent
 from spade.message import Message
 from spade.behaviour import FSMBehaviour, State, PeriodicBehaviour, OneShotBehaviour, CyclicBehaviour
-import datetime
 from spade.template import Template
 
 CLIENT_REQUEST = Template()
@@ -10,25 +9,23 @@ CLIENT_REQUEST.set_metadata("propose", "get_proposal")
 JOIN_REQUEST = Template()
 JOIN_REQUEST.set_metadata("join", "join_request")
 
-def log(name, message):
-    print("[",datetime.datetime.now(),"] ",name," ",message)
-
-class PortAgent(Agent):
+class PortAgent(LoggingAgent):
     class RecvBehav(CyclicBehaviour):
         async def run(self):
+            log = self.agent.log
             message_wait_timeout = 10
             msg = await self.receive(timeout=message_wait_timeout)
 
             if msg:
-                log(self.agent.agent_name,"Message received with content: {}".format(msg.body))
+                log("Message received with content: {}".format(msg.body))
 
                 if JOIN_REQUEST.match(msg):
                     if msg.body == "transtainer":
                         self.agent.transtainers.append(str(msg.sender))
-                        log(self.agent.agent_name,f"Transtainer joined {str(msg.sender)}")
+                        log(f"Transtainer joined {str(msg.sender)}")
                     elif msg.body == "crane":
                         self.agent.cranes.append(str(msg.sender))
-                        log(self.agent.agent_name,"Crane joined")
+                        log("Crane joined")
 
                 elif CLIENT_REQUEST.match(msg):
                     #message from client
@@ -38,7 +35,7 @@ class PortAgent(Agent):
                         snd.set_metadata("client_jid", str(msg.sender))
                         snd.body = msg.body
                         await self.send(snd)
-                        log(self.agent.agent_name,f"Request sent to transtainer [{stainer}]!")
+                        log(f"Request sent to transtainer [{stainer}]!")
 
                 elif str(msg.sender) in self.agent.transtainers:
                     # Message from transtainer
@@ -47,19 +44,21 @@ class PortAgent(Agent):
                         ans.set_metadata("internal", "container_request")
                         ans.body = "YES"
                         await self.send(ans)
-                        log(self.agent.agent_name,"Answer sent to client!")
+                        log("Answer sent to client!")
                 else:
                     pass
   
             else:
-                print("Did not received any message after: {} seconds".format(message_wait_timeout))
+                log("Did not received any message after: {} seconds".format(message_wait_timeout))
 
 
         async def on_end(self):
-            print("Port Agent listening ...")
+            log = self.agent.log
+            log("Port Agent listening ...")
 
     async def setup(self):
-        print("Main Port agent started")
+        log = self.log
+        log("Main Port agent started")
         self.transtainers = []
         self.cranes = []
         b = self.RecvBehav()

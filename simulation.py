@@ -6,6 +6,7 @@ from transtainerAgent import TranstainerAgent
 import os
 
 print("Simulation starting...")
+print("Can be stopped with ctrl+C")
 
 port_jid = os.environ.get("PORT_JID")
 port_password = os.environ.get("PORT_PASSWORD")
@@ -40,8 +41,6 @@ transtainer3.set_containers({"11111","22222","33333"})
 operator = OperatorAgent(operator_base_jid + "/1", operator_password, "pickup", port.jid)
 operator.start().result()
 
-
-print("Wait until user interrupts with ctrl+C")
 while True:
         try:
             time.sleep(1)
