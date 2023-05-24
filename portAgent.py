@@ -13,7 +13,7 @@ class PortAgent(LoggingAgent):
     class RecvBehav(CyclicBehaviour):
         async def run(self):
             log = self.agent.log
-            message_wait_timeout = 10
+            message_wait_timeout = 100
             msg = await self.receive(timeout=message_wait_timeout)
 
             if msg:
