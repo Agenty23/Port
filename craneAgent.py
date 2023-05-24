@@ -32,6 +32,7 @@ class CraneAgent(LoggingAgent):
                 log("Message received with content: {}".format(msg.body))
                 res = Message(to=str(msg.sender))
                 res.set_metadata("internal","crane_offer")
+                res.set_metadata("client_jid", msg.get_metadata("client_jid"))
                 res.body = str(random.randint(20,100))
                 await self.send(res)
 
