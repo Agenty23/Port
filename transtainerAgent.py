@@ -16,15 +16,19 @@ def log(name, message):
 
 
 class TranstainerAgent(Agent):
+    def __init__(self, jid, password, port_jid):
+        super().__init__(jid, password)
+        self.port_jid = str(port_jid)
     
     class RecvBehav(CyclicBehaviour):
         async def run(self):
             message_wait_timeout = 100
+            port_jid = self.agent.port_jid
 
             msg = await self.receive(timeout=100)
             if msg:
                 log(self.agent.agent_name,"Message received with content: {} from: {}".format(msg.body,msg.sender))
-                if str(msg.sender) == "port@jabbim.pl":#msg.match(CONTAINER_REQUEST):
+                if str(msg.sender) == port_jid:#msg.match(CONTAINER_REQUEST):
                     # Got message from Port agent with request for some container
                     if msg.body.split(',')[0] in self.agent.containers:
                         # If the transtainer contains the container
@@ -42,7 +46,7 @@ class TranstainerAgent(Agent):
                     # Got crane offer for solving the container
                     if msg.body != "No":
                         price = msg.body
-                        response = Message(to="port@jabbim.pl")
+                        response = Message(to=port_jid)
                         response.set_metadata("internal", "positive")
                         response.body = str(price)
                         await self.send(response)

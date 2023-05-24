@@ -9,6 +9,9 @@ def log(name, message):
     print("[",datetime.datetime.now(),"] ",name," ",message)
 
 class CraneAgent(Agent):
+    def __init__(self, jid, password, port_jid):
+        super().__init__(jid, password)
+        self.port_jid = str(port_jid)
 
     class RecvBehav(CyclicBehaviour):
         async def run(self):

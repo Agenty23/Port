@@ -6,6 +6,11 @@ from spade.message import Message
 from spade.template import Template
 
 class OperatorAgent(Agent):
+    def __init__(self, jid, password, action, port_jid):
+        super().__init__(jid, password)
+        self.action = action
+        self.port_jid = str(port_jid)
+
     class RequestContainerBehaviour(OneShotBehaviour):
         async def on_start(self):
             print("How many containers do you want to get?")
@@ -23,7 +28,7 @@ class OperatorAgent(Agent):
                 print(c)
             print("Collection: ",self.collection)
             print("\n")
-            msg = Message(to="port@jabbim.pl")
+            msg = Message(to=self.agent.port_jid)
 
             msg.set_metadata("propose", "get_proposal")
             msg.body = f"{self.containerID[0]},{self.collection.strftime('%d-%m-%Y')}"
@@ -43,5 +48,10 @@ class OperatorAgent(Agent):
 
     async def setup(self):
         print("Operator agent started")
-        b = self.RequestContainerBehaviour()
+        if self.action == "pickup":
+            b = self.RequestContainerBehaviour()
+        elif self.action == "dropoff":
+            pass # TODO
+        else:
+            raise ValueError("Unknown action")
         self.add_behaviour(b)
