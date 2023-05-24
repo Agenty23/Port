@@ -17,8 +17,6 @@ class PortAgent(LoggingAgent):
             msg = await self.receive(timeout=message_wait_timeout)
 
             if msg:
-                log("Message received with content: {}".format(msg.body))
-
                 if JOIN_REQUEST.match(msg):
                     if msg.body == "transtainer":
                         self.agent.transtainers.append(str(msg.sender))
