@@ -1,8 +1,8 @@
 import time
-from operatorAgent import OperatorAgent
-from portAgent import PortAgent
-from craneAgent import CraneAgent
-from transtainerAgent import TranstainerAgent
+from agents.operatorAgent import OperatorAgent
+from agents.portAgent import PortAgent
+from agents.craneAgent import CraneAgent
+from agents.transtainerAgent import TranstainerAgent
 import os
 
 print("Simulation starting...")

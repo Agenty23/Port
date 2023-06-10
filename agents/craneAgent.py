@@ -1,6 +1,6 @@
 import random
 from typing import List
-from loggingAgent import LoggingAgent
+from agents.loggingAgent import LoggingAgent
 from spade.message import Message
 from spade.template import Template
 from spade.behaviour import FSMBehaviour, State, PeriodicBehaviour, CyclicBehaviour, OneShotBehaviour
@@ -11,6 +11,9 @@ PICKUP_PROPOSAL.set_metadata("internal", "crane_price_request")
 
 DROPOFF_PROPOSAL = Template()
 DROPOFF_PROPOSAL.set_metadata("internal", "crane_dropoff_request")
+
+STAINER_OFFER_PROPOSAL = Template()
+STAINER_OFFER_PROPOSAL.set_metadata("internal", "stainer_offer_resp")
 
 TRANSTAINER_JOIN_REQUEST = Template()
 TRANSTAINER_JOIN_REQUEST.set_metadata("join", "crane_join_request")
@@ -57,8 +60,20 @@ class CraneAgent(LoggingAgent):
 
             elif DROPOFF_PROPOSAL.match(msg):
                 log("Message received with content: {}".format(msg.body))
-                
+                for stainers in self.agent.transtainers:
+                    snd = Message(to=stainers)
+                    snd.set_metadata("internal", "stainer_offer")
+                    snd.set_metadata("client_jid", msg.get_metadata("client_jid"))
+                    snd.set_metadata("arrival_date", msg.get_metadata("arrival_date"))
+                    snd.body = msg.body
+                    await self.send(snd)
+                    log(f"Request sent to transtainer [{stainers}]!")
 
+            # elif STAINER_OFFER_PROPOSAL.match(msg):
+            #     if msg.get_metadata("result") == "accept":
+
+
+            
     async def setup(self):
         log = self.log
         log("Crane agent started")

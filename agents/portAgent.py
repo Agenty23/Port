@@ -1,10 +1,13 @@
-from loggingAgent import LoggingAgent
+from agents.loggingAgent import LoggingAgent
 from spade.message import Message
 from spade.behaviour import FSMBehaviour, State, PeriodicBehaviour, OneShotBehaviour, CyclicBehaviour
 from spade.template import Template
 
-CLIENT_REQUEST = Template()
-CLIENT_REQUEST.set_metadata("propose", "get_proposal")
+CLIENT_PICKUP_REQUEST = Template()
+CLIENT_PICKUP_REQUEST.set_metadata("propose", "pickup_proposal")
+
+CLIENT_DROP_REQUEST = Template()
+CLIENT_DROP_REQUEST.set_metadata("propose", "drop_proposal")
 
 JOIN_REQUEST = Template()
 JOIN_REQUEST.set_metadata("join", "join_request")
@@ -20,12 +23,12 @@ class PortAgent(LoggingAgent):
                 if JOIN_REQUEST.match(msg):
                     if msg.body == "transtainer":
                         self.agent.transtainers.append(str(msg.sender))
-                        log(f"Transtainer joined {str(msg.sender)}")
+                        log(f"Transtainer [{str(msg.sender)}] joined")
                     elif msg.body == "crane":
                         self.agent.cranes.append(str(msg.sender))
-                        log("Crane joined")
+                        log(f"Crane [{str(msg.sender)}] joined")
 
-                elif CLIENT_REQUEST.match(msg):
+                elif CLIENT_PICKUP_REQUEST.match(msg):
                     #message from client
                     for stainer in self.agent.transtainers:
                         snd = Message(to=stainer)
@@ -35,6 +38,18 @@ class PortAgent(LoggingAgent):
                         await self.send(snd)
                         log(f"Request sent to transtainer [{stainer}]!")
 
+                elif CLIENT_DROP_REQUEST.match(msg):
+                    containerIDs = msg.body[:msg.body.index(';')].split(',')
+                    arrivalDate = msg.body[msg.body.index(';')+1:]
+                    for crane in self.agent.cranes:
+                        snd = Message(to=crane)
+                        snd.set_metadata("internal", "crane_dropoff_request")
+                        snd.set_metadata("client_jid", str(msg.sender))
+                        snd.set_metadata("arrival_date", arrivalDate)
+                        snd.body = f"{containerIDs.count}"
+                        await self.send(snd)
+                        log(f"Request sent to crane [{crane}]!")
+                        
                 elif str(msg.sender) in self.agent.transtainers:
                     # Message from transtainer
                     if(msg.body != "No"):
@@ -42,7 +57,7 @@ class PortAgent(LoggingAgent):
                         ans.set_metadata("internal", "container_request")
                         ans.body = "YES"
                         await self.send(ans)
-                        log("Answer sent to client!")
+                        log(f"Answer sent to client [{str(ans.to)}]!")
                 else:
                     pass
   

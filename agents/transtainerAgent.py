@@ -1,16 +1,17 @@
 from operator import contains
 from typing import List
-from loggingAgent import LoggingAgent
+from agents.loggingAgent import LoggingAgent
 from spade.message import Message
 from spade.behaviour import FSMBehaviour, State, PeriodicBehaviour, OneShotBehaviour, CyclicBehaviour
-import datetime
+import random
 from spade.template import Template
 
 CONTAINER_REQUEST = Template()
 CONTAINER_REQUEST.set_metadata("internal", "container_request")
 CRANE_PROPOSAL = Template()
 CRANE_PROPOSAL.set_metadata("internal","crane_offer")
-
+STAINER_OFFER_REQUEST = Template()
+STAINER_OFFER_REQUEST.set_metadata("internal","stainer_offer")
 
 class TranstainerAgent(LoggingAgent):
     def __init__(self, jid, password, port_jid, crane_jid):
@@ -67,6 +68,7 @@ class TranstainerAgent(LoggingAgent):
                         response.set_metadata("client_jid", msg.get_metadata("client_jid"))
                         response.body = "No"
                         await self.send(response)
+
                 elif CRANE_PROPOSAL.match(msg):
                     # Got crane offer for solving the container
                     if msg.body != "No":
@@ -82,6 +84,23 @@ class TranstainerAgent(LoggingAgent):
                         response.set_metadata("client_jid", str(msg.get_metadata("client_jid")))
                         response.body = "No"
                         await self.send(response)
+                        
+                elif STAINER_OFFER_REQUEST.match(msg):
+                    # TODO: Set up capacity with some mapping
+                    response = Message(to=str(msg.sender))
+                    response.set_metadata("internal", "stainer_offer_resp")
+                    response.set_metadata("client_jid", str(msg.get_metadata("client_jid")))
+
+                    # TODO: Implement logic here
+                    if (random.randint(0,1) == 1):
+                        response.set_metadata("result", "accept")
+                        response.body = random.randint(20,100)
+                    else:
+                        response.set_metadata("result", "reject")
+                        response.body = "No"
+
+                    await self.send(response)
+
             else:
                 log("Did not received any message after: {} seconds".format(message_wait_timeout))
 
