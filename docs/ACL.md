@@ -8,6 +8,7 @@ It is a message structure specification which we will be using in this project (
 - **sender** - the sender of the message
 - **receiver** - the receiver of the message
 - **reply-to** - the address to which the receiver should reply
+- **topic** - the topic of the message for specific reaction context (filtering messages with the same performative) (non-standard, implemented for purpose of this project)
 - **content** - the content of the message
 - **language** - the language in which the content is written
 - **encoding** - the encoding of the content (not used in this project)
