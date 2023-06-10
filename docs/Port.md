@@ -16,4 +16,4 @@ This also leads to relations between agents:
 | --- | --- | --- |
 | Port | Crane | One-to-Many |
 | Crane | Transtainer | Many-to-Many |
-| Transtainer | Container | One-to-Many |
+| Operator | Port | Many-to-Many |
