@@ -14,7 +14,7 @@ It is a message structure specification which we will be using in this project (
 - **encoding** - the encoding of the content (not used in this project)
 - **ontology** - the ontology to which the content refers (not used in this project)
 - **protocol** - the protocol to be used (not used in this project)
-- **conversation-id** - the conversation to which the message refers
+- **conversation-id** - the conversation to which the message refers (not used in this project since SPADE has thread property instead)
 - **reply-with** - the identifier of the message
 - **in-reply-to** - the identifier of the message to which this message is a reply
 - **reply-by** - the date by which the reply is expected
