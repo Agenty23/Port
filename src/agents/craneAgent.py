@@ -80,7 +80,4 @@ class CraneAgent(LoggingAgent):
         b = self.JoinPortBehav()
         self.add_behaviour(b)
         self.transtainers = []
-    
-    def set_name(self,name):
-        self.agent_name = name
         

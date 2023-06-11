@@ -3,12 +3,15 @@ from agents.operatorAgent import OperatorAgent
 from agents.portAgent import PortAgent
 from agents.craneAgent import CraneAgent
 from agents.transtainerAgent import TranstainerAgent
+from agents.yellowPagesAgent import YellowPagesAgent
 import os
 
 print("Simulation starting...")
 print("Can be stopped with ctrl+C")
 
 ############## CONFIG ##############
+yellow_pages_jid = os.environ.get("YELLOW_PAGES_JID")
+yellow_pages_password = os.environ.get("YELLOW_PAGES_PASSWORD")
 port_jid = os.environ.get("PORT_JID")
 port_password = os.environ.get("PORT_PASSWORD")
 transtainer_base_jid = os.environ.get("TRANSTAINER_BASE_JID")
@@ -22,20 +25,16 @@ num_of_transtainers = 3
 
 ############ END CONFIG ############
 
-
 port = PortAgent(port_jid, port_password)
 port.start().result()
-port.set_name("Port")
 
 crane = CraneAgent(crane_base_jid + "/1", crane_password, port.jid)
 crane.start().result()
-crane.set_name("Crane")
 
 trainstainers = []
 for i in range(num_of_transtainers):
     trainstainers.append(TranstainerAgent(transtainer_base_jid + "/" + str(i), transtainer_password, port.jid, crane.jid))
     trainstainers[i].start().result()
-    trainstainers[i].set_name("Transtainer" + str(i))
      
 trainstainers[0].set_containers({"AS123","ZX234","12345"})
 trainstainers[1].set_containers({"aaaaa","bbbbb","ccccc"})

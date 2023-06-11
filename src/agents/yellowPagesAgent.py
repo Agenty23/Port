@@ -25,6 +25,7 @@ class YellowPagesAgent(LoggingAgent):
         async def run(self):
             log = self.agent.log
             message_wait_timeout = 100
+            log("Waiting for registration message...")
 
             msg = await self.receive(timeout=message_wait_timeout)
             if not msg:
@@ -59,6 +60,7 @@ class YellowPagesAgent(LoggingAgent):
         async def run(self):
             log = self.agent.log
             message_wait_timeout = 100
+            log("Waiting for service list request...")
 
             msg = await self.receive(timeout=message_wait_timeout)
             if not msg:

@@ -76,7 +76,4 @@ class PortAgent(LoggingAgent):
         self.cranes = []
         b = self.RecvBehav()
         self.add_behaviour(b)
-
-    def set_name(self,name):
-        self.agent_name = name
         

@@ -112,9 +112,6 @@ class TranstainerAgent(LoggingAgent):
         b = self.JoinPortBehav()
         self.add_behaviour(b)
     
-    def set_name(self,name):
-        self.agent_name = name
-
     def set_containers(self,cnt):
         self.containers = cnt
     
