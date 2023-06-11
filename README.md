@@ -10,3 +10,8 @@ Agent Systems approach will also let us use significantly less computing power i
 
 - [ACL as standard for communication](docs/ACL.md)
 - [Our port model](docs/Port.md)
+
+## Code structure
+
+- '/src/agents/' - contains all agents definitions with their behaviours but without business logic (how to count the cost of the operation).
+- '/src/messageTemplates/' - contains all message templates used in the project. Place where one can find how to prepare message to specific agent.
