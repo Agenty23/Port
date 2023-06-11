@@ -2,6 +2,7 @@ from agents.loggingAgent import LoggingAgent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
 from messageTemplates.msgBody import MsgBody
+from messageTemplates.msgDecoder import MsgDecoder
 from messageTemplates.yellowPagesAgentTemplates import (
     portRegistration,
     craneRegistration,
@@ -37,7 +38,7 @@ class YellowPagesAgent(LoggingAgent):
             reply = Message(to=msg.sender)
             reply.set_metadata("performative", "agree")
 
-            body = MsgBody.from_json(msg.body)
+            body = MsgDecoder.from_json(msg.body)
             if not body:
                 reply.set_metadata("performative", "not-understood")
 
@@ -72,7 +73,7 @@ class YellowPagesAgent(LoggingAgent):
             reply = Message(to=msg.sender)
             reply.set_metadata("performative", "inform")
 
-            body = msg.body
+            body = MsgDecoder.from_json(msg.body)
             if not body:
                 log("Received message without body")
                 reply.set_metadata("performative", "not-understood")
