@@ -80,7 +80,7 @@ class YellowPagesAgent(LoggingAgent):
 
             elif type(body) is portListRequest:
                 ports = [
-                    x.portJid
+                    x.port_jid
                     for x in self.agent.port_registrations
                     if body.location == x.location
                 ]
@@ -88,7 +88,7 @@ class YellowPagesAgent(LoggingAgent):
 
             elif type(body) is craneListRequest:
                 cranes = [
-                    x.craneJid
+                    x.crane_jid
                     for x in self.agent.crane_registrations
                     if body.location == x.location and body.dockId in x.dockIds
                 ]
@@ -96,10 +96,10 @@ class YellowPagesAgent(LoggingAgent):
 
             elif type(body) is transtainerListRequest:
                 transtainers = [
-                    x.transtainerJid
+                    x.transtainer_jid
                     for x in self.agent.transtainer_registrations
                     if body.location == x.location
-                    and body.transferPointId == x.transferPointId
+                    and body.transfer_point_id == x.transfer_point_id
                 ]
                 reply.body = MsgBody.to_json(transtainers)
 

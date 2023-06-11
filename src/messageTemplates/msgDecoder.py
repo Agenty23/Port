@@ -1,7 +1,7 @@
 from json import JSONDecoder
 import messageTemplates.yellowPagesAgentTemplates as ypat
 
-MsgBodyClassess = {
+msg_body_classes = {
     "portRegistration" : ypat.portRegistration,
     "craneRegistration" : ypat.craneRegistration,
     "transtainerRegistration" : ypat.transtainerRegistration,
@@ -20,6 +20,6 @@ class MsgDecoder(JSONDecoder):
             return None
 
         key = list(d.keys())[0]
-        if key in MsgBodyClassess:
-            return MsgBodyClassess[key](**d[key])
+        if key in msg_body_classes:
+            return msg_body_classes[key](**d[key])
         return None

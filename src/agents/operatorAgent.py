@@ -15,23 +15,23 @@ class OperatorAgent(LoggingAgent):
         async def on_start(self):
             print("------------Input section-------------")
             print("How many containers do you want to get?")
-            self.nContainers = int(input())
-            self.containerID = []
-            for _ in range(self.nContainers):
+            self.n_containers = int(input())
+            self.container_ids = []
+            for _ in range(self.n_containers):
                 print("Please enter container ID:")
-                self.containerID.append(input())
+                self.container_ids.append(input())
             print("Please enter date of collection(dd-mm-yyyy)")
             self.collection = datetime.datetime.strptime(input(),'%d-%m-%Y').date()
             print("\n")
 
         async def run(self):
             log = self.agent.log
-            log(f"Containers to get: {self.containerID}")
+            log(f"Containers to get: {self.container_ids}")
             log(f"Pick up date: {self.collection}")
 
             msg = Message(to=self.agent.port_jid)
             msg.set_metadata("propose", "pickup_proposal")
-            msg.body = f"{self.containerID[0]},{self.collection.strftime('%d-%m-%Y')}"
+            msg.body = f"{self.container_id[0]},{self.collection.strftime('%d-%m-%Y')}"
             await self.send(msg)
             log(f"Request sent to port {self.agent.port_jid}")
 
@@ -48,19 +48,19 @@ class OperatorAgent(LoggingAgent):
         async def on_start(self):
             print("------------Input section-------------")
             print("Please enter container IDs (comma separated):")
-            self.containerIDs = input().split(',')
+            self.container_ids = input().split(',')
             print("Please enter date of arrival(dd-mm-yyyy)")
             self.arrival = datetime.datetime.strptime(input(),'%d-%m-%Y').date()
             print("\n")
 
         async def run(self):
             log = self.agent.log
-            log(f"Containers to store: {self.containerIDs}")
+            log(f"Containers to store: {self.container_ids}")
             log(f"Arrival date: {self.arrival}")
             
             msg = Message(to=self.agent.port_jid)
             msg.set_metadata("propose", "drop_proposal")
-            msg.body = f"{self.containerIDs};{self.arrival.strftime('%d-%m-%Y')}"
+            msg.body = f"{self.container_ids};{self.arrival.strftime('%d-%m-%Y')}"
             await self.send(msg)
             log(f"Request sent to port {self.agent.port_jid}")
 

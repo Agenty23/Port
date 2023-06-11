@@ -39,14 +39,14 @@ class PortAgent(LoggingAgent):
                         log(f"Request sent to transtainer [{stainer}]!")
 
                 elif CLIENT_DROP_REQUEST.match(msg):
-                    containerIDs = msg.body[:msg.body.index(';')].split(',')
+                    container_ids = msg.body[:msg.body.index(';')].split(',')
                     arrivalDate = msg.body[msg.body.index(';')+1:]
                     for crane in self.agent.cranes:
                         snd = Message(to=crane)
                         snd.set_metadata("internal", "crane_dropoff_request")
                         snd.set_metadata("client_jid", str(msg.sender))
                         snd.set_metadata("arrival_date", arrivalDate)
-                        snd.body = f"{containerIDs.count}"
+                        snd.body = f"{container_ids.count}"
                         await self.send(snd)
                         log(f"Request sent to crane [{crane}]!")
                         

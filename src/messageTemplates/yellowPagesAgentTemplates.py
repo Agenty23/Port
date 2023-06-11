@@ -10,15 +10,15 @@ REGISTER_REQUEST.set_metadata("topic", "register")
 
 # Message content: portRegistration|craneRegistration|transtainerRegistration
 class portRegistration(MsgBody):
-    def __init__(self, portJid: str, location: str):
-        self.portJid = portJid
+    def __init__(self, port_jid: str, location: str):
+        self.port_jid = port_jid
         self.location = location
 
 class craneRegistration(MsgBody):
-    def __init__(self, craneJid: str, location: str, dockIds: list[int], transferPointIds: list[int]):
-        self.craneJid = craneJid
+    def __init__(self, crane_jid: str, location: str, docks_ids: list[int], transferPointIds: list[int]):
+        self.crane_jid = crane_jid
         self.location = location
-        self.dockIds = dockIds
+        self.docks_ids = docks_ids
         self.transferPointIds = transferPointIds
 
 class transtainerRegistration(MsgBody):
@@ -54,14 +54,14 @@ class portListRequest:
         self.location = location
 
 class craneListRequest:
-    def __init__(self, location: str, dockId: int):
+    def __init__(self, location: str, dock_id: int):
         self.location = location
-        self.dockId = dockId
+        self.dock_id = dock_id
 
 class transtainerListRequest:
-    def __init__(self, location: str, transferPointId: int):
+    def __init__(self, location: str, transfer_point_id: int):
         self.location = location
-        self.transferPointId = transferPointId
+        self.transfer_point_id = transfer_point_id
 
 # Response message template
 SERVICES_LIST_INFORM = Template()
