@@ -1,12 +1,15 @@
+from concurrent.futures import thread
 import time
 from operatorAgent import OperatorAgent
 from portAgent import PortAgent
 from craneAgent import CraneAgent
 from transtainerAgent import TranstainerAgent
 
+
 print("Simulation starting...")
 
 port = PortAgent("port@jabbim.pl", "qwert")
+print("hi")
 port.start().result()
 port.set_name("Port")
 crane = CraneAgent("test_agent@jabbim.pl/6", "123")
