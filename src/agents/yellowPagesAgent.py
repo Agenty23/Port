@@ -18,10 +18,13 @@ from messageTemplates.basicTemplates import NotUnderstoodMsgBody
 
 
 class YellowPagesAgent(LoggingAgent):
-    async def setup(self):
+    def __init__(self, jid: str, password: str):
+        super().__init__(jid, password)
         self.port_registrations = []
         self.crane_registrations = []
         self.transtainer_registrations = []
+
+    async def setup(self):
         self.add_behaviour(self.RegisterBehav(), template=REGISTER_REQUEST_TEMPLATE)
         self.add_behaviour(
             self.ServiceListBehav(), template=SERVICES_LIST_QUERY_REF_TEMPLATE
@@ -34,7 +37,7 @@ class YellowPagesAgent(LoggingAgent):
             message_wait_timeout = 100
             log("Waiting for registration message...")
 
-            msg = await self.receive()
+            msg = await self.receive(timeout=message_wait_timeout)
             if not msg:
                 log(
                     f"Did not received any message after {message_wait_timeout} seconds."
@@ -65,8 +68,7 @@ class YellowPagesAgent(LoggingAgent):
                     log("Got message with unknown body!")
                     replyBody = NotUnderstoodMsgBody()
 
-            await self.send(replyBody.create_message("port@jabb.im"))
-            log(f"Sending reply to [{msg.sender}]")
+            await self.send(replyBody.create_message(str(msg.sender)))
 
     class ServiceListBehav(CyclicBehaviour):
         async def run(self):
@@ -116,4 +118,4 @@ class YellowPagesAgent(LoggingAgent):
                     log("Received message with unknown body")
                     replyBody = NotUnderstoodMsgBody()
 
-            await self.send(replyBody.create_message(msg.sender))
+            await self.send(replyBody.create_message(str(msg.sender)))

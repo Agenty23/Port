@@ -34,17 +34,21 @@ class PortAgent(LoggingAgent):
         super().__init__(jid, password)
         self.location = location
         self.yellow_pages_jids = yellow_pages_jids
-
-    async def setup(self):
         self.transtainers = []
         self.cranes = []
-        self.add_behaviour(self.RegisterBehav())
+
+    async def setup(self):
+        self.add_behaviour(
+            self.RegisterBehav(),
+            template=(REGISTER_AGREE_TEMPLATE | REGISTER_REFUSE_TEMPLATE),
+        )
         self.log("PortAgent started")
 
     class RegisterBehav(OneShotBehaviour):
         async def run(self):
             log = self.agent.log
             body = PortRegistrationMsgBody(str(self.agent.jid), self.agent.location)
+
             for yellow_pages_jid in self.agent.yellow_pages_jids:
                 await self.send(body.create_message(yellow_pages_jid))
                 log(f"Register request sent to yellow pages agent [{yellow_pages_jid}]")
@@ -76,9 +80,8 @@ class PortAgent(LoggingAgent):
     class RecvBehav(CyclicBehaviour):
         async def run(self):
             log = self.agent.log
-            message_wait_timeout = 100
-            msg = await self.receive(timeout=message_wait_timeout)
 
+            msg = await self.receive(timeout=100)
             # if msg:
             #     if JOIN_REQUEST.match(msg):
             #         if msg.body == "transtainer":

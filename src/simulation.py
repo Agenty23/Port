@@ -29,19 +29,34 @@ yellow_pages = YellowPagesAgent(yellow_pages_jid, yellow_pages_password)
 yellow_pages.start().result()
 
 port = PortAgent(port_jid, port_password, "Gdansk", [yellow_pages_jid])
-port.start().result()
+port.start()
 
-# crane = CraneAgent(crane_base_jid + "/1", crane_password, port.jid)
-# crane.start().result()
+crane = CraneAgent(
+    crane_base_jid + "/1",
+    crane_password,
+    "Gdansk",
+    [1, 2],
+    [1, 2, 3, 4],
+    [yellow_pages_jid],
+)
+crane.start()
 
-# trainstainers = []
-# for i in range(num_of_transtainers):
-#     trainstainers.append(TranstainerAgent(transtainer_base_jid + "/" + str(i), transtainer_password, port.jid, crane.jid))
-#     trainstainers[i].start().result()
+trainstainers = []
+for i in range(num_of_transtainers):
+    trainstainers.append(
+        TranstainerAgent(
+            transtainer_base_jid + "/" + str(i),
+            transtainer_password,
+            "Gdansk",
+            [i + 1],
+            [yellow_pages_jid],
+        )
+    )
+    trainstainers[i].start().result()
 
-# trainstainers[0].set_containers({"AS123","ZX234","12345"})
-# trainstainers[1].set_containers({"aaaaa","bbbbb","ccccc"})
-# trainstainers[2].set_containers({"11111","22222","33333"})
+trainstainers[0].set_containers({"AS123", "ZX234", "12345"})
+trainstainers[1].set_containers({"aaaaa", "bbbbb", "ccccc"})
+trainstainers[2].set_containers({"11111", "22222", "33333"})
 
 # operator = OperatorAgent(operator_base_jid + "/1", operator_password, "pickup", port.jid)
 # operator.start().result()
