@@ -1,26 +1,32 @@
 from agents.loggingAgent import LoggingAgent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour
-from messageTemplates.msgBody import MsgBody
-from messageTemplates.msgDecoder import MsgDecoder
+from messageTemplates.msgDecoder import decode_msg
 from messageTemplates.yellowPagesAgentTemplates import (
-    portRegistration,
-    craneRegistration,
-    transtainerRegistration,
-    portListRequest,
-    craneListRequest,
-    transtainerListRequest,
-    REGISTER_REQUEST,
-    SERVICES_LIST_QUERY_REF,
+    PortRegistrationMsgBody,
+    CraneRegistrationMsgBody,
+    TranstainerRegistrationMsgBody,
+    RegistrationAgreeResponseMsgBody,
+    ServicesListResponseMsgBody,
+    PortListRequestMsgBody,
+    CraneListRequestMsgBody,
+    TranstainerListRequestMsgBody,
+    REGISTER_REQUEST_TEMPLATE,
+    SERVICES_LIST_QUERY_REF_TEMPLATE,
 )
+from messageTemplates.basicTemplates import NotUnderstoodMsgBody
 
 
 class YellowPagesAgent(LoggingAgent):
-    def __init__(self, jid, password):
-        super().__init__(jid, password)
+    async def setup(self):
         self.port_registrations = []
         self.crane_registrations = []
         self.transtainer_registrations = []
+        self.add_behaviour(self.RegisterBehav(), template=REGISTER_REQUEST_TEMPLATE)
+        self.add_behaviour(
+            self.ServiceListBehav(), template=SERVICES_LIST_QUERY_REF_TEMPLATE
+        )
+        self.log("YellowPagesAgent started")
 
     class RegisterBehav(CyclicBehaviour):
         async def run(self):
@@ -28,34 +34,39 @@ class YellowPagesAgent(LoggingAgent):
             message_wait_timeout = 100
             log("Waiting for registration message...")
 
-            msg = await self.receive(timeout=message_wait_timeout)
+            msg = await self.receive()
             if not msg:
                 log(
                     f"Did not received any message after {message_wait_timeout} seconds."
                 )
                 return
 
-            reply = Message(to=msg.sender)
-            reply.set_metadata("performative", "agree")
+            body = decode_msg(msg)
 
-            body = MsgDecoder.from_json(msg.body)
             if not body:
-                reply.set_metadata("performative", "not-understood")
-
-            elif type(body) is portRegistration:
-                self.agent.port_registrations.append(body)
-
-            elif type(body) is craneRegistration:
-                self.agent.crane_registrations.append(body)
-
-            elif type(body) is transtainerRegistration:
-                self.agent.transtainer_registrations.append(body)
+                log("Got message with no body!")
+                replyBody = NotUnderstoodMsgBody()
 
             else:
-                log("Received message with unknown body type")
-                reply.set_metadata("performative", "not-understood")
+                replyBody = RegistrationAgreeResponseMsgBody()
+                if type(body) is PortRegistrationMsgBody:
+                    log(f"Port [{body.port_jid}] registered!")
+                    self.agent.port_registrations.append(body)
 
-            await self.send(reply)
+                elif type(body) is CraneRegistrationMsgBody:
+                    log(f"Crane [{body.crane_jid}] registered!")
+                    self.agent.crane_registrations.append(body)
+
+                elif type(body) is TranstainerRegistrationMsgBody:
+                    log(f"Transtainer [{body.transtainer_jid}] registered!")
+                    self.agent.transtainer_registrations.append(body)
+
+                else:
+                    log("Got message with unknown body!")
+                    replyBody = NotUnderstoodMsgBody()
+
+            await self.send(replyBody.create_message("port@jabb.im"))
+            log(f"Sending reply to [{msg.sender}]")
 
     class ServiceListBehav(CyclicBehaviour):
         async def run(self):
@@ -70,48 +81,39 @@ class YellowPagesAgent(LoggingAgent):
                 )
                 return
 
-            reply = Message(to=msg.sender)
-            reply.set_metadata("performative", "inform")
-
-            body = MsgDecoder.from_json(msg.body)
+            body = decode_msg(msg)
             if not body:
                 log("Received message without body")
-                reply.set_metadata("performative", "not-understood")
-
-            elif type(body) is portListRequest:
-                ports = [
-                    x.port_jid
-                    for x in self.agent.port_registrations
-                    if body.location == x.location
-                ]
-                reply.body = MsgBody.to_json(ports)
-
-            elif type(body) is craneListRequest:
-                cranes = [
-                    x.crane_jid
-                    for x in self.agent.crane_registrations
-                    if body.location == x.location and body.dockId in x.dockIds
-                ]
-                reply.body = MsgBody.to_json(cranes)
-
-            elif type(body) is transtainerListRequest:
-                transtainers = [
-                    x.transtainer_jid
-                    for x in self.agent.transtainer_registrations
-                    if body.location == x.location
-                    and body.transfer_point_id == x.transfer_point_id
-                ]
-                reply.body = MsgBody.to_json(transtainers)
+                replyBody = NotUnderstoodMsgBody()
 
             else:
-                log("Received message with unknown body")
-                reply.set_metadata("performative", "not-understood")
+                if type(body) is PortListRequestMsgBody:
+                    servicesList = [
+                        x.port_jid
+                        for x in self.agent.port_registrations
+                        if body.location == x.location
+                    ]
+                    replyBody = ServicesListResponseMsgBody(servicesList)
 
-            await self.send(reply)
+                elif type(body) is CraneListRequestMsgBody:
+                    servicesList = [
+                        x.crane_jid
+                        for x in self.agent.crane_registrations
+                        if body.location == x.location and body.dockId in x.dockIds
+                    ]
+                    replyBody = ServicesListResponseMsgBody(servicesList)
 
+                elif type(body) is TranstainerListRequestMsgBody:
+                    servicesList = [
+                        x.transtainer_jid
+                        for x in self.agent.transtainer_registrations
+                        if body.location == x.location
+                        and body.transfer_point_id == x.transfer_point_id
+                    ]
+                    replyBody = ServicesListResponseMsgBody(servicesList)
 
-    async def setup(self):
-        self.log("YellowPagesAgent starting...")
-        self.add_behaviour(self.RegisterBehav(), template=REGISTER_REQUEST)
-        self.add_behaviour(self.ServiceListBehav(), template=SERVICES_LIST_QUERY_REF)
-        self.log("YellowPagesAgent started")
+                else:
+                    log("Received message with unknown body")
+                    replyBody = NotUnderstoodMsgBody()
+
+            await self.send(replyBody.create_message(msg.sender))

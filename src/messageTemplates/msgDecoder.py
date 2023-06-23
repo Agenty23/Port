@@ -1,25 +1,22 @@
-from json import JSONDecoder
+from json import loads
+from spade.message import Message
 import messageTemplates.yellowPagesAgentTemplates as ypat
 
 msg_body_classes = {
-    "portRegistration" : ypat.portRegistration,
-    "craneRegistration" : ypat.craneRegistration,
-    "transtainerRegistration" : ypat.transtainerRegistration,
-    "portListRequest" : ypat.portListRequest,
-    "craneListRequest" : ypat.craneListRequest,
-    "transtainerListRequest" : ypat.transtainerListRequest
+    "PortRegistrationMsgBody" : ypat.PortRegistrationMsgBody,
+    "CraneRegistrationMsgBody" : ypat.CraneRegistrationMsgBody,
+    "TranstainerRegistrationMsgBody" : ypat.TranstainerRegistrationMsgBody,
+    "PortListRequestMsgBody" : ypat.PortListRequestMsgBody,
+    "CraneListRequestMsgBody" : ypat.CraneListRequestMsgBody,
+    "TranstainerListRequestMsgBody" : ypat.TranstainerListRequestMsgBody
 }
-    
 
-class MsgDecoder(JSONDecoder):
-    def __init__(self):
-        JSONDecoder.__init__(self, object_hook=self.dict_to_object)
-    
-    def dict_to_object(self, d):
-        if type(d) is not dict:
-            return None
-
-        key = list(d.keys())[0]
-        if key in msg_body_classes:
-            return msg_body_classes[key](**d[key])
+def decode_msg(msg: Message) -> object:
+    msgBody = loads(msg.body)
+    if type(msgBody) is not dict:
         return None
+
+    key = list(msgBody.keys())[0]
+    if key in msg_body_classes:
+        return msg_body_classes[key](**msgBody[key])
+    return None
