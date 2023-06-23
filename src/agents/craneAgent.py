@@ -39,13 +39,13 @@ class CraneAgent(LoggingAgent):
         location: str,
         docks_ids: list[int],
         transfer_points_ids: list[int],
-        yellow_pages_jids: list[str],
+        yellow_pages_jid: str,
     ):
         super().__init__(jid, password)
         self.location = location
         self.docks_ids = docks_ids
         self.transfer_points_ids = transfer_points_ids
-        self.yellow_pages_jids = yellow_pages_jids
+        self.yellow_pages_jid = yellow_pages_jid
 
     async def setup(self):
         self.add_behaviour(
@@ -64,29 +64,26 @@ class CraneAgent(LoggingAgent):
                 self.agent.transfer_points_ids,
             )
 
-            for yellow_pages_jid in self.agent.yellow_pages_jids:
-                await self.send(body.create_message(yellow_pages_jid))
-                log(f"Register request sent to yellow pages agent [{yellow_pages_jid}]")
+            await self.send(body.create_message(self.agent.yellow_pages_jid))
+            log(f"Register request sent to yellow pages agent [{self.agent.yellow_pages_jid}]")
 
-                start_time = time()
-                while time() - start_time < 30:
-                    reply = await self.receive(timeout=30)
-                    if not reply or str(reply.sender) != yellow_pages_jid:
-                        continue
+            start_time = time()
+            while time() - start_time < 30:
+                reply = await self.receive(timeout=30)
+                if not reply or str(reply.sender) != self.agent.yellow_pages_jid:
+                    continue
 
-                    if REGISTER_AGREE_TEMPLATE.match(reply):
-                        log("Registration accepted")
-                        return
+                if REGISTER_AGREE_TEMPLATE.match(reply):
+                    log("Registration accepted")
+                    return
 
-                    elif REGISTER_REFUSE_TEMPLATE.match(reply):
-                        log("Registration refused")
+                elif REGISTER_REFUSE_TEMPLATE.match(reply):
+                    log("Registration refused")
 
-                    else:
-                        log("Unexpected reply")
+                else:
+                    log("Unexpected reply")
 
-                log("Register request timeout")
-
-            log("Not registered to any yellow pages agent. Shutting down...")
+            log("Failed to register. Shutting down...")
             self.kill()
 
         async def on_end(self):

@@ -28,7 +28,7 @@ num_of_transtainers = 3
 yellow_pages = YellowPagesAgent(yellow_pages_jid, yellow_pages_password)
 yellow_pages.start().result()
 
-port = PortAgent(port_jid, port_password, "Gdansk", [yellow_pages_jid])
+port = PortAgent(port_jid, port_password, "Gdansk", yellow_pages_jid)
 port.start()
 
 crane = CraneAgent(
@@ -37,7 +37,7 @@ crane = CraneAgent(
     "Gdansk",
     [1, 2],
     [1, 2, 3, 4],
-    [yellow_pages_jid],
+    yellow_pages_jid,
 )
 crane.start()
 
@@ -49,7 +49,7 @@ for i in range(num_of_transtainers):
             transtainer_password,
             "Gdansk",
             [i + 1],
-            [yellow_pages_jid],
+            yellow_pages_jid,
         )
     )
     trainstainers[i].start().result()
