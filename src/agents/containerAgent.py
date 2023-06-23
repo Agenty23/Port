@@ -14,8 +14,8 @@ class AskBehaviour(CyclicBehaviour):
 
         async def run(self):
             msg = await self.receive(timeout=1000)
-            messageSender : str = str(msg.sender)
-            msg = Message(to=messageSender)
+            message_sender : str = str(msg.sender)
+            msg = Message(to=message_sender)
             msg.body = str(self.agent.weight)
             await self.send(msg)
             
@@ -32,7 +32,7 @@ class ContainerAgent(Agent):
         b = self.AskBehaviour()
         self.add_behaviour(b)
         self.weight = 100
-        self.portOfOrigin = "Poland"
+        self.port_of_origin = "Poland"
 
 
 
