@@ -99,13 +99,13 @@ class PortListRequestMsgBody(ServicesListRequestMsgBody):
 
 
 class CraneListRequestMsgBody(ServicesListRequestMsgBody):
-    def __init__(self, location: str, dock_id: int):
+    def __init__(self, location: str, dock_id: int = None):
         self.location = location
         self.dock_id = dock_id
 
 
 class TranstainerListRequestMsgBody(ServicesListRequestMsgBody):
-    def __init__(self, location: str, transfer_point_id: int):
+    def __init__(self, location: str, transfer_point_id: int = None):
         self.location = location
         self.transfer_point_id = transfer_point_id
 

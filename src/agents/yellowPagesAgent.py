@@ -35,13 +35,9 @@ class YellowPagesAgent(LoggingAgent):
         async def run(self):
             log = self.agent.log
             message_wait_timeout = 100
-            log("Waiting for registration message...")
 
             msg = await self.receive(timeout=message_wait_timeout)
             if not msg:
-                log(
-                    f"Did not received any message after {message_wait_timeout} seconds."
-                )
                 return
 
             body = decode_msg(msg)
@@ -74,13 +70,9 @@ class YellowPagesAgent(LoggingAgent):
         async def run(self):
             log = self.agent.log
             message_wait_timeout = 100
-            log("Waiting for service list request...")
 
             msg = await self.receive(timeout=message_wait_timeout)
             if not msg:
-                log(
-                    f"Did not received any message after {message_wait_timeout} seconds."
-                )
                 return
 
             body = decode_msg(msg)
@@ -99,22 +91,40 @@ class YellowPagesAgent(LoggingAgent):
                     replyBody = ServicesListResponseMsgBody(servicesList)
 
                 elif type(body) is CraneListRequestMsgBody:
-                    log(f"Received crane list request for location {body.location} and dockId {body.dockId}")
-                    servicesList = [
-                        x.crane_jid
-                        for x in self.agent.crane_registrations
-                        if body.location == x.location and body.dockId in x.dockIds
-                    ]
+                    log(
+                        f"Received crane list request for location {body.location} and dockId {body.dockId}"
+                    )
+                    if body.dockId == None:
+                        servicesList = [
+                            x.crane_jid
+                            for x in self.agent.crane_registrations
+                            if body.location == x.location
+                        ]
+                    else:
+                        servicesList = [
+                            x.crane_jid
+                            for x in self.agent.crane_registrations
+                            if body.location == x.location and body.dockId in x.dockIds
+                        ]
                     replyBody = ServicesListResponseMsgBody(servicesList)
 
                 elif type(body) is TranstainerListRequestMsgBody:
-                    log(f"Received transtainer list request for location {body.location} and transfer point id {body.transfer_point_id}")
-                    servicesList = [
-                        x.transtainer_jid
-                        for x in self.agent.transtainer_registrations
-                        if body.location == x.location
-                        and body.transfer_point_id == x.transfer_point_id
-                    ]
+                    log(
+                        f"Received transtainer list request for location {body.location} and transfer point id {body.transfer_point_id}"
+                    )
+                    if body.transfer_point_id == None:
+                        servicesList = [
+                            x.transtainer_jid
+                            for x in self.agent.transtainer_registrations
+                            if body.location == x.location
+                        ]
+                    else:
+                        servicesList = [
+                            x.transtainer_jid
+                            for x in self.agent.transtainer_registrations
+                            if body.location == x.location
+                            and body.transfer_point_id == x.transfer_point_id
+                        ]
                     replyBody = ServicesListResponseMsgBody(servicesList)
 
                 else:
