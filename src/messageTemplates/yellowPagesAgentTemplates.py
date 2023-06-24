@@ -55,7 +55,7 @@ REGISTER_REFUSE_TEMPLATE.set_metadata("performative", "refuse")
 REGISTER_REFUSE_TEMPLATE.set_metadata("topic", "register")
 
 
-# Response message: RegistrationResponse
+# Response message: RegistrationAgreeResponse | RegistrationRefuseResponse
 class RegistrationAgreeResponseMsgBody(MsgBody):
     def create_message(self, to: str):
         msg = super().create_message(to)
@@ -64,7 +64,7 @@ class RegistrationAgreeResponseMsgBody(MsgBody):
         return msg
 
 
-class RegistrationRefuseResponse(MsgBody):
+class RegistrationRefuseResponseMsgBody(MsgBody):
     def create_message(self, to: str):
         msg = super().create_message(to)
         msg.set_metadata("performative", "refuse")
