@@ -28,6 +28,7 @@ from messageTemplates.containerArrivalTemplates import (
     ContainerArrivalProposeMsgBody,
     ContainerArrivalRefuseMsgBody,
 )
+import numpy as np
 
 
 class TranstainerAgent(ThreadCachingAgent):
@@ -38,12 +39,14 @@ class TranstainerAgent(ThreadCachingAgent):
         location: str,
         transfer_point_id: int,
         yellow_pages_jid: str,
+        yard: np.ndarray = np.empty((5, 5, 5), dtype=str)
     ):
         super().__init__(jid, password)
         self.yellow_pages_jid = yellow_pages_jid
         self.containers: List[str] = []
         self.location = location
         self.transfer_point_id = transfer_point_id
+        self.yard = yard
 
     async def setup(self):
         await super().setup()
@@ -52,9 +55,6 @@ class TranstainerAgent(ThreadCachingAgent):
             template=(REGISTER_AGREE_TEMPLATE | REGISTER_REFUSE_TEMPLATE),
         )
         self.log("Transtainer agent started")
-
-    def set_containers(self, containers: List[str]):
-        self.containers = containers
 
     class RegisterBehav(OneShotBehaviour):
         async def run(self):
@@ -119,8 +119,3 @@ class TranstainerAgent(ThreadCachingAgent):
             for container in body.container_ids:
                 if container in self.agent.containers:
                     local_containers.append(container)
-
-            if not local_containers:
-                log("No requested containers")
-            else:
-                log(f"Having requested containers ({len(local_containers)}/{len(body.container_ids)}):  {local_containers}")

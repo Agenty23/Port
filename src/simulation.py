@@ -6,6 +6,9 @@ from agents.craneAgent import CraneAgent
 from agents.transtainerAgent import TranstainerAgent
 from agents.yellowPagesAgent import YellowPagesAgent
 import os
+import numpy as np
+import random as rand
+import string
 
 print("Simulation starting...")
 print("Can be stopped with ctrl+C")
@@ -42,8 +45,22 @@ crane = CraneAgent(
 )
 crane.start()
 
+container_ids_pool = [''.join(rand.choices(string.ascii_letters + string.digits, k=5)) for i in range(3 * 3 * 3 * num_of_transtainers)]
+container_ids_taken = set()
+
 trainstainers = []
 for i in range(num_of_transtainers):
+    yard = np.empty((3,3,3), dtype=str)
+    for x in range(3):
+        for y in range(3):
+            for z in range(3):
+                if rand.random() > 0.5:
+                    yard[x][y][z] = container_ids_pool.pop(rand.randint(0, len(container_ids_pool) - 1))
+                    container_ids_taken.add(yard[x][y][z])
+                else:
+                    break
+                
+
     trainstainers.append(
         TranstainerAgent(
             transtainer_base_jid + "/" + str(i),
@@ -51,13 +68,10 @@ for i in range(num_of_transtainers):
             "Gdansk",
             [i + 1],
             yellow_pages_jid,
+            yard
         )
     )
     trainstainers[i].start().result()
-
-trainstainers[0].set_containers({"AS123", "ZX234", "12345"})
-trainstainers[1].set_containers({"aaaaa", "bbbbb", "ccccc"})
-trainstainers[2].set_containers({"11111", "22222", "33333"})
 
 try:
     sleep(5)
@@ -66,7 +80,7 @@ try:
         operator_base_jid + "/1",
         operator_password,
         "pickup",
-        ["AS123", "bbbbb", "33333"],
+        rand.sample(container_ids_taken, 3),
         datetime.now(),
         "Gdansk",
         yellow_pages_jid
@@ -79,7 +93,7 @@ try:
         operator_base_jid + "/2",
         operator_password,
         "dropoff",
-        ["ABCDE", "aabbc", "12345"],
+        rand.sample(container_ids_pool, 3),
         datetime.now(),
         "Gdansk",
         yellow_pages_jid
