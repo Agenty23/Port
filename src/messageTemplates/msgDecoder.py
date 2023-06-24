@@ -8,7 +8,10 @@ msg_body_classes = {
     "TranstainerRegistrationMsgBody" : ypat.TranstainerRegistrationMsgBody,
     "PortListRequestMsgBody" : ypat.PortListRequestMsgBody,
     "CraneListRequestMsgBody" : ypat.CraneListRequestMsgBody,
-    "TranstainerListRequestMsgBody" : ypat.TranstainerListRequestMsgBody
+    "TranstainerListRequestMsgBody" : ypat.TranstainerListRequestMsgBody,
+    "ServicesListResponseMsgBody" : ypat.ServicesListResponseMsgBody,
+    "RegistrationAgreeResponseMsgBody" : ypat.RegistrationAgreeResponseMsgBody,
+    "RegistrationRefuseResponseMsgBody" : ypat.RegistrationRefuseResponseMsgBody,
 }
 
 def decode_msg(msg: Message) -> object:

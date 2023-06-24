@@ -1,4 +1,5 @@
-import time
+from time import sleep
+from datetime import datetime
 from agents.operatorAgent import OperatorAgent
 from agents.portAgent import PortAgent
 from agents.craneAgent import CraneAgent
@@ -58,12 +59,44 @@ trainstainers[0].set_containers({"AS123", "ZX234", "12345"})
 trainstainers[1].set_containers({"aaaaa", "bbbbb", "ccccc"})
 trainstainers[2].set_containers({"11111", "22222", "33333"})
 
-# operator = OperatorAgent(operator_base_jid + "/1", operator_password, "pickup", port.jid)
-# operator.start().result()
+try:
+    sleep(5)
 
-while True:
-    try:
-        time.sleep(1)
-    except KeyboardInterrupt:
-        break
+    operator = OperatorAgent(
+        operator_base_jid + "/1",
+        operator_password,
+        "pickup",
+        ["AS123", "bbbbb", "33333"],
+        datetime.now(),
+        "Gdansk",
+        yellow_pages_jid
+    )
+    operator.start().result()
+
+    sleep(5)
+
+    operator = OperatorAgent(
+        operator_base_jid + "/2",
+        operator_password,
+        "dropoff",
+        ["ABCDE", "aabbc", "12345"],
+        datetime.now(),
+        "Gdansk",
+        yellow_pages_jid
+    )
+    operator.start().result()
+    
+    while True:
+        sleep(1)
+
+except KeyboardInterrupt:
+    print("Simulation stopped")
+    port.stop()
+    crane.stop()
+    for transtainer in trainstainers:
+        transtainer.stop()
+    operator.stop()
+    yellow_pages.stop()
+
+    
 # operator.stop()

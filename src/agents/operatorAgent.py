@@ -4,82 +4,79 @@ from spade.behaviour import OneShotBehaviour
 import datetime
 from spade.message import Message
 from spade.template import Template
+from messageTemplates.yellowPagesAgentTemplates import (
+    PortListRequestMsgBody,
+    SERVICES_LIST_INFORM_TEMPLATE,
+)
+from messageTemplates.msgDecoder import decode_msg
+
 
 class OperatorAgent(LoggingAgent):
-    def __init__(self, jid, password, action, port_jid):
+    def __init__(
+        self,
+        jid: str,
+        password: str,
+        action: str,
+        container_ids: list[str],
+        date: datetime,
+        location: str,
+        yellow_pages_jid: str,
+    ):
         super().__init__(jid, password)
         self.action = action
-        self.port_jid = str(port_jid)
+        self.container_ids = container_ids
+        self.date = date
+        self.location = location
+        self.yellow_pages_jid = yellow_pages_jid
+
+    async def setup(self):
+        if self.action == "pickup":
+            self.add_behaviour(
+                self.RequestContainerBehaviour(),
+                template=(SERVICES_LIST_INFORM_TEMPLATE),
+            )
+        elif self.action == "dropoff":
+            self.add_behaviour(
+                self.RegisterContainerBehaviour(),
+                template=(SERVICES_LIST_INFORM_TEMPLATE),
+            )
+        else:
+            raise ValueError("Unknown action")
+        self.log("Operator agent started")
+
+    async def get_port_list(self, parent_behaviour, location: str):
+        log = parent_behaviour.agent.log
+
+        portListRequest = PortListRequestMsgBody(parent_behaviour.agent.location)
+        await parent_behaviour.send(
+            portListRequest.create_message(parent_behaviour.agent.yellow_pages_jid)
+        )
+
+        portList = await parent_behaviour.receive(timeout=30)
+        if portList is None:
+            log("No port available. Shutting down ...")
+            return None
+
+        portList = decode_msg(portList).service_jids
+        log(f"Port list received: {portList}")
+        return portList
 
     class RequestContainerBehaviour(OneShotBehaviour):
-        async def on_start(self):
-            print("------------Input section-------------")
-            print("How many containers do you want to get?")
-            self.n_containers = int(input())
-            self.container_ids = []
-            for _ in range(self.n_containers):
-                print("Please enter container ID:")
-                self.container_ids.append(input())
-            print("Please enter date of collection(dd-mm-yyyy)")
-            self.collection = datetime.datetime.strptime(input(),'%d-%m-%Y').date()
-            print("\n")
-
         async def run(self):
             log = self.agent.log
-            log(f"Containers to get: {self.container_ids}")
-            log(f"Pick up date: {self.collection}")
+            log(f"Requesting pick up of containers (on {self.agent.date}):")
+            log(",".join(self.agent.container_ids))
 
-            msg = Message(to=self.agent.port_jid)
-            msg.set_metadata("propose", "pickup_proposal")
-            msg.body = f"{self.container_id[0]},{self.collection.strftime('%d-%m-%Y')}"
-            await self.send(msg)
-            log(f"Request sent to port {self.agent.port_jid}")
-
-            message_wait_timeout = 10
-            msg = await self.receive(timeout=message_wait_timeout)
-            if msg:
-                log("Client received with content: {}".format(msg.body))
-            else:
-                log("Did not received any message after: {} seconds".format(message_wait_timeout))
+            portList = await self.agent.get_port_list(self, self.agent.location)
 
             self.kill(exit_code=0)
 
     class RegisterContainerBehaviour(OneShotBehaviour):
-        async def on_start(self):
-            print("------------Input section-------------")
-            print("Please enter container IDs (comma separated):")
-            self.container_ids = input().split(',')
-            print("Please enter date of arrival(dd-mm-yyyy)")
-            self.arrival = datetime.datetime.strptime(input(),'%d-%m-%Y').date()
-            print("\n")
-
         async def run(self):
             log = self.agent.log
-            log(f"Containers to store: {self.container_ids}")
-            log(f"Arrival date: {self.arrival}")
-            
-            msg = Message(to=self.agent.port_jid)
-            msg.set_metadata("propose", "drop_proposal")
-            msg.body = f"{self.container_ids};{self.arrival.strftime('%d-%m-%Y')}"
-            await self.send(msg)
-            log(f"Request sent to port {self.agent.port_jid}")
+            log(f"Requesting drop off of containers (on {self.agent.date}):")
+            log(",".join(self.agent.container_ids))
 
-            message_wait_timeout = 10
-            msg = await self.receive(timeout=message_wait_timeout)
-            if msg:
-                log("Client received with content: {}".format(msg.body))
-            else:
-                log("Did not received any message after: {} seconds".format(message_wait_timeout))
+            portList = await self.agent.get_port_list(self, self.agent.location)
 
             self.kill(exit_code=0)
-
-    async def setup(self):
-        log = self.log
-        log("Operator agent started")
-        if self.action == "pickup":
-            b = self.RequestContainerBehaviour()
-        elif self.action == "dropoff":
-            b = self.RegisterContainerBehaviour()
-        else:
-            raise ValueError("Unknown action")
-        self.add_behaviour(b)
