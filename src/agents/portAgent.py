@@ -1,48 +1,61 @@
 from agents.loggingAgent import LoggingAgent
 from spade.message import Message
 from spade.behaviour import (
-    FSMBehaviour,
-    State,
-    PeriodicBehaviour,
     OneShotBehaviour,
     CyclicBehaviour,
+    PeriodicBehaviour
 )
-from spade.template import Template
-from messageTemplates.basicTemplates import NotUnderstoodMsgBody
-from messageTemplates.msgDecoder import decode_msg
 from messageTemplates.yellowPagesAgentTemplates import (
     PortRegistrationMsgBody,
     REGISTER_AGREE_TEMPLATE,
     REGISTER_REFUSE_TEMPLATE,
+    CraneListRequestMsgBody,
+    SERVICES_LIST_INFORM_TEMPLATE,
 )
+from messageTemplates.containerArrivalTemplates import (
+    CONTAINER_ARRIVAL_CFP_TEMPLATE,
+    ContainerArrivalCFPMsgBody,
+    ContainerArrivalProposeMsgBody,
+    ContainerArrivalRefuseMsgBody,
+)
+from messageTemplates.basicTemplates import BLOCK_TEMPLATE
 from time import time, sleep
-
-CLIENT_PICKUP_REQUEST = Template()
-CLIENT_PICKUP_REQUEST.set_metadata("propose", "pickup_proposal")
-
-CLIENT_DROP_REQUEST = Template()
-CLIENT_DROP_REQUEST.set_metadata("propose", "drop_proposal")
-
-JOIN_REQUEST = Template()
-JOIN_REQUEST.set_metadata("join", "join_request")
+from messageTemplates.msgDecoder import decode_msg
+from datetime import datetime, timedelta
 
 
 class PortAgent(LoggingAgent):
-    def __init__(
-        self, jid: str, password: str, location: str, yellow_pages_jid: str
-    ):
+    def __init__(self, jid: str, password: str, location: str, yellow_pages_jid: str):
         super().__init__(jid, password)
         self.location = location
         self.yellow_pages_jid = yellow_pages_jid
-        self.transtainers = []
-        self.cranes = []
+        self.container_arrival_threads_body = {}
+        self.container_arrival_threads_reply_by = {}
 
     async def setup(self):
         self.add_behaviour(
             self.RegisterBehav(),
             template=(REGISTER_AGREE_TEMPLATE | REGISTER_REFUSE_TEMPLATE),
         )
+        self.add_behaviour(self.CleanUpBehav(period=120, start_at=datetime.now() + timedelta(seconds=120)), template=BLOCK_TEMPLATE)
         self.log("PortAgent started")
+
+    async def get_cranes_list(self, parent_behaviour) -> list[str]:
+        log = self.log
+
+        cranes_list_request = CraneListRequestMsgBody(self.location)
+        await parent_behaviour.send(
+            cranes_list_request.create_message(self.yellow_pages_jid)
+        )
+
+        cranes_list = await parent_behaviour.receive(timeout=30)
+        if cranes_list is None:
+            log("No cranes available.")
+            return None
+
+        cranes_list = decode_msg(cranes_list).service_jids
+        log(f"Port list received: {cranes_list}")
+        return cranes_list
 
     class RegisterBehav(OneShotBehaviour):
         async def run(self):
@@ -50,7 +63,9 @@ class PortAgent(LoggingAgent):
             body = PortRegistrationMsgBody(str(self.agent.jid), self.agent.location)
 
             await self.send(body.create_message(self.agent.yellow_pages_jid))
-            log(f"Register request sent to yellow pages agent [{self.agent.yellow_pages_jid}]")
+            log(
+                f"Register request sent to yellow pages agent [{self.agent.yellow_pages_jid}]"
+            )
 
             start_time = time()
             while time() - start_time < 30:
@@ -72,56 +87,63 @@ class PortAgent(LoggingAgent):
             self.kill()
 
         async def on_end(self):
-            self.agent.add_behaviour(self.agent.RecvBehav())
+            self.agent.add_behaviour(
+                self.agent.ContainerArrivalCFPBehav(),
+                template=(
+                    CONTAINER_ARRIVAL_CFP_TEMPLATE | SERVICES_LIST_INFORM_TEMPLATE
+                ),
+            )
 
-    class RecvBehav(CyclicBehaviour):
+    class CleanUpBehav(PeriodicBehaviour):
+        def cleanup(self, reply_by: dict[str, datetime], body: dict[str, object]):
+            log = self.agent.log
+            for thread, reply_by in reply_by.items():
+                if reply_by < datetime.now():
+                    log(f"Thread {thread} timed out")
+                    try:
+                        del body[thread]
+                    except KeyError:
+                        continue
+                    try:
+                        del reply_by[thread]
+                    except KeyError:
+                        continue
+
         async def run(self):
             log = self.agent.log
+            log("Cleaning up...")
+            self.cleanup(self.agent.container_arrival_threads_body, self.agent.container_arrival_threads_reply_by)
 
-            msg = await self.receive(timeout=100)
-            # if msg:
-            #     if JOIN_REQUEST.match(msg):
-            #         if msg.body == "transtainer":
-            #             self.agent.transtainers.append(str(msg.sender))
-            #             log(f"Transtainer [{str(msg.sender)}] joined")
-            #         elif msg.body == "crane":
-            #             self.agent.cranes.append(str(msg.sender))
-            #             log(f"Crane [{str(msg.sender)}] joined")
+    class ContainerArrivalCFPBehav(CyclicBehaviour):
+        async def run(self):
+            log = self.agent.log
+            msg = await self.receive(timeout=30)
+            if not msg:
+                return
 
-            #     elif CLIENT_PICKUP_REQUEST.match(msg):
-            #         # message from client
-            #         for stainer in self.agent.transtainers:
-            #             snd = Message(to=stainer)
-            #             snd.set_metadata("internal", "container_request")
-            #             snd.set_metadata("client_jid", str(msg.sender))
-            #             snd.body = msg.body
-            #             await self.send(snd)
-            #             log(f"Request sent to transtainer [{stainer}]!")
+            log(f"Received container arrival CFP from [{msg.sender}]")
+            body = decode_msg(msg)
+            if not body:
+                log("Invalid message")
+                return
+            
+            msg_reply_by = datetime.fromisoformat(msg.get_metadata("reply-by"))
+            if msg_reply_by < datetime.now() + timedelta(seconds=10):
+                log("Not enough time to process")
+                return
 
-            #     elif CLIENT_DROP_REQUEST.match(msg):
-            #         container_ids = msg.body[: msg.body.index(";")].split(",")
-            #         arrivalDate = msg.body[msg.body.index(";") + 1 :]
-            #         for crane in self.agent.cranes:
-            #             snd = Message(to=crane)
-            #             snd.set_metadata("internal", "crane_dropoff_request")
-            #             snd.set_metadata("client_jid", str(msg.sender))
-            #             snd.set_metadata("arrival_date", arrivalDate)
-            #             snd.body = f"{container_ids.count}"
-            #             await self.send(snd)
-            #             log(f"Request sent to crane [{crane}]!")
+            cranes_list = await self.agent.get_cranes_list(self)
+            if not cranes_list:
+                self.send(ContainerArrivalRefuseMsgBody().create_message(str(msg.sender), msg.thread))
+                return
+            
+            self.agent.container_arrival_threads_body[msg.thread] = body
+            self.agent.container_arrival_threads_reply_by[msg.thread] = msg_reply_by
 
-            #     elif str(msg.sender) in self.agent.transtainers:
-            #         # Message from transtainer
-            #         if msg.body != "No":
-            #             ans = Message(to=msg.get_metadata("client_jid"))
-            #             ans.set_metadata("internal", "container_request")
-            #             ans.body = "YES"
-            #             await self.send(ans)
-            #             log(f"Answer sent to client [{str(ans.to)}]!")
-            #     else:
-            #         pass
-
-            # else:
-            #     log(
-            #         f"Did not received any message after: {message_wait_timeout} seconds"
-            #     )
+            crane_cfp = ContainerArrivalCFPMsgBody(
+                body.container_ids,
+                body.date
+            )
+            for crane in cranes_list:
+                await self.send(crane_cfp.create_message(crane, msg_reply_by - timedelta(seconds=10), msg.thread))
+                

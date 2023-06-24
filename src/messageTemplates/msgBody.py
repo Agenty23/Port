@@ -10,8 +10,8 @@ class ObjectEncoder(JSONEncoder):
 
 
 class MsgBody:
-    def create_message(self, to: str):
-        msg = Message(to)
+    def create_message(self, to: str, thread: str = None):
+        msg = Message(to, thread=thread)
         msg.body = self.toJSON()
         return msg
 
