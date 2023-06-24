@@ -1,10 +1,6 @@
-from agents.loggingAgent import LoggingAgent
+from agents.threadCachingAgent import ThreadCachingAgent
 from spade.message import Message
-from spade.behaviour import (
-    OneShotBehaviour,
-    CyclicBehaviour,
-    PeriodicBehaviour
-)
+from spade.behaviour import OneShotBehaviour, CyclicBehaviour, PeriodicBehaviour
 from messageTemplates.yellowPagesAgentTemplates import (
     PortRegistrationMsgBody,
     REGISTER_AGREE_TEMPLATE,
@@ -24,7 +20,7 @@ from messageTemplates.msgDecoder import decode_msg
 from datetime import datetime, timedelta
 
 
-class PortAgent(LoggingAgent):
+class PortAgent(ThreadCachingAgent):
     def __init__(self, jid: str, password: str, location: str, yellow_pages_jid: str):
         super().__init__(jid, password)
         self.location = location
@@ -33,11 +29,11 @@ class PortAgent(LoggingAgent):
         self.container_arrival_threads_reply_by = {}
 
     async def setup(self):
+        await super().setup()
         self.add_behaviour(
             self.RegisterBehav(),
             template=(REGISTER_AGREE_TEMPLATE | REGISTER_REFUSE_TEMPLATE),
         )
-        self.add_behaviour(self.CleanUpBehav(period=120, start_at=datetime.now() + timedelta(seconds=120)), template=BLOCK_TEMPLATE)
         self.log("PortAgent started")
 
     async def get_cranes_list(self, parent_behaviour) -> list[str]:
@@ -54,7 +50,6 @@ class PortAgent(LoggingAgent):
             return None
 
         cranes_list = decode_msg(cranes_list).service_jids
-        log(f"Port list received: {cranes_list}")
         return cranes_list
 
     class RegisterBehav(OneShotBehaviour):
@@ -94,26 +89,6 @@ class PortAgent(LoggingAgent):
                 ),
             )
 
-    class CleanUpBehav(PeriodicBehaviour):
-        def cleanup(self, reply_by: dict[str, datetime], body: dict[str, object]):
-            log = self.agent.log
-            for thread, reply_by in reply_by.items():
-                if reply_by < datetime.now():
-                    log(f"Thread {thread} timed out")
-                    try:
-                        del body[thread]
-                    except KeyError:
-                        continue
-                    try:
-                        del reply_by[thread]
-                    except KeyError:
-                        continue
-
-        async def run(self):
-            log = self.agent.log
-            log("Cleaning up...")
-            self.cleanup(self.agent.container_arrival_threads_body, self.agent.container_arrival_threads_reply_by)
-
     class ContainerArrivalCFPBehav(CyclicBehaviour):
         async def run(self):
             log = self.agent.log
@@ -126,7 +101,7 @@ class PortAgent(LoggingAgent):
             if not body:
                 log("Invalid message")
                 return
-            
+
             msg_reply_by = datetime.fromisoformat(msg.get_metadata("reply-by"))
             if msg_reply_by < datetime.now() + timedelta(seconds=10):
                 log("Not enough time to process")
@@ -134,16 +109,20 @@ class PortAgent(LoggingAgent):
 
             cranes_list = await self.agent.get_cranes_list(self)
             if not cranes_list:
-                self.send(ContainerArrivalRefuseMsgBody().create_message(str(msg.sender), msg.thread))
+                self.send(
+                    ContainerArrivalRefuseMsgBody().create_message(
+                        str(msg.sender), msg.thread
+                    )
+                )
                 return
-            
+
             self.agent.container_arrival_threads_body[msg.thread] = body
             self.agent.container_arrival_threads_reply_by[msg.thread] = msg_reply_by
 
-            crane_cfp = ContainerArrivalCFPMsgBody(
-                body.container_ids,
-                body.date
-            )
+            crane_cfp = ContainerArrivalCFPMsgBody(body.container_ids, body.date)
             for crane in cranes_list:
-                await self.send(crane_cfp.create_message(crane, msg_reply_by - timedelta(seconds=10), msg.thread))
-                
+                await self.send(
+                    crane_cfp.create_message(
+                        crane, msg_reply_by - timedelta(seconds=10), msg.thread
+                    )
+                )

@@ -1,6 +1,8 @@
 from operator import contains
 from typing import List
-from agents.loggingAgent import LoggingAgent
+
+from spade.container import Container
+from agents.threadCachingAgent import ThreadCachingAgent
 from spade.message import Message
 from spade.behaviour import (
     FSMBehaviour,
@@ -15,18 +17,20 @@ from messageTemplates.yellowPagesAgentTemplates import (
     TranstainerRegistrationMsgBody,
     REGISTER_AGREE_TEMPLATE,
     REGISTER_REFUSE_TEMPLATE,
+    SERVICES_LIST_INFORM_TEMPLATE,
 )
 from time import time
+from messageTemplates.msgDecoder import decode_msg
+from datetime import datetime, timedelta
+from messageTemplates.containerArrivalTemplates import (
+    CONTAINER_ARRIVAL_CFP_TEMPLATE,
+    ContainerArrivalCFPMsgBody,
+    ContainerArrivalProposeMsgBody,
+    ContainerArrivalRefuseMsgBody,
+)
 
-CONTAINER_REQUEST = Template()
-CONTAINER_REQUEST.set_metadata("internal", "container_request")
-CRANE_PROPOSAL = Template()
-CRANE_PROPOSAL.set_metadata("internal", "crane_offer")
-STAINER_OFFER_REQUEST = Template()
-STAINER_OFFER_REQUEST.set_metadata("internal", "stainer_offer")
 
-
-class TranstainerAgent(LoggingAgent):
+class TranstainerAgent(ThreadCachingAgent):
     def __init__(
         self,
         jid: str,
@@ -42,14 +46,15 @@ class TranstainerAgent(LoggingAgent):
         self.transfer_point_id = transfer_point_id
 
     async def setup(self):
+        await super().setup()
         self.add_behaviour(
             self.RegisterBehav(),
             template=(REGISTER_AGREE_TEMPLATE | REGISTER_REFUSE_TEMPLATE),
         )
         self.log("Transtainer agent started")
 
-    def set_containers(self, cnt):
-        self.containers = cnt
+    def set_containers(self, containers: List[str]):
+        self.containers = containers
 
     class RegisterBehav(OneShotBehaviour):
         async def run(self):
@@ -61,7 +66,9 @@ class TranstainerAgent(LoggingAgent):
             )
 
             await self.send(body.create_message(to=self.agent.yellow_pages_jid))
-            log(f"Register request sent to yellow pages agent [{self.agent.yellow_pages_jid}]")
+            log(
+                f"Register request sent to yellow pages agent [{self.agent.yellow_pages_jid}]"
+            )
 
             start_time = time()
             while time() - start_time < 30:
@@ -83,81 +90,37 @@ class TranstainerAgent(LoggingAgent):
             self.kill()
 
         async def on_end(self):
-            self.agent.add_behaviour(self.agent.RecvBehav())
+            self.agent.add_behaviour(
+                self.agent.ContainerArrivalCFPBehav(),
+                template=(
+                    CONTAINER_ARRIVAL_CFP_TEMPLATE | SERVICES_LIST_INFORM_TEMPLATE
+                ),
+            )
 
-    class RecvBehav(CyclicBehaviour):
+    class ContainerArrivalCFPBehav(CyclicBehaviour):
         async def run(self):
             log = self.agent.log
+            msg = await self.receive(timeout=30)
+            if not msg:
+                return
 
-            msg = await self.receive(timeout=100)
-            # if msg:
-            #     log(
-            #         "Message received with content: {} from: {}".format(
-            #             msg.body, msg.sender
-            #         )
-            #     )
-            #     if CONTAINER_REQUEST.match(msg):
-            #         # Got message from Port agent with request for some container
-            #         if msg.body.split(",")[0] in self.agent.containers:
-            #             # If the transtainer contains the container
-            #             crane_req = Message(to=self.agent.crane_jid)
-            #             crane_req.set_metadata("internal", "crane_price_request")
-            #             crane_req.set_metadata(
-            #                 "client_jid", msg.get_metadata("client_jid")
-            #             )
-            #             crane_req.body = msg.body.split(",")[1]
-            #             await self.send(crane_req)
-            #         else:
-            #             log("Container not here")
-            #             response = Message(to=str(msg.sender))
-            #             response.set_metadata("internal", "negative")
-            #             response.set_metadata(
-            #                 "client_jid", msg.get_metadata("client_jid")
-            #             )
-            #             response.body = "No"
-            #             await self.send(response)
+            log(f"Received container arrival CFP from [{msg.sender}]")
+            body = decode_msg(msg)
+            if not body:
+                log("Invalid message")
+                return
 
-            #     elif CRANE_PROPOSAL.match(msg):
-            #         # Got crane offer for solving the container
-            #         if msg.body != "No":
-            #             price = msg.body
-            #             response = Message(to=port_jid)
-            #             response.set_metadata("internal", "positive")
-            #             response.set_metadata(
-            #                 "client_jid", str(msg.get_metadata("client_jid"))
-            #             )
-            #             response.body = str(price)
-            #             await self.send(response)
-            #         else:
-            #             response = Message(to=str(msg.sender))
-            #             response.set_metadata("internal", "negative")
-            #             response.set_metadata(
-            #                 "client_jid", str(msg.get_metadata("client_jid"))
-            #             )
-            #             response.body = "No"
-            #             await self.send(response)
+            msg_reply_by = datetime.fromisoformat(msg.get_metadata("reply-by"))
+            if msg_reply_by < datetime.now() + timedelta(seconds=10):
+                log("Not enough time to process")
+                return
 
-            #     elif STAINER_OFFER_REQUEST.match(msg):
-            #         # TODO: Set up capacity with some mapping
-            #         response = Message(to=str(msg.sender))
-            #         response.set_metadata("internal", "stainer_offer_resp")
-            #         response.set_metadata(
-            #             "client_jid", str(msg.get_metadata("client_jid"))
-            #         )
+            local_containers = []
+            for container in body.container_ids:
+                if container in self.agent.containers:
+                    local_containers.append(container)
 
-            #         # TODO: Implement logic here
-            #         if random.randint(0, 1) == 1:
-            #             response.set_metadata("result", "accept")
-            #             response.body = random.randint(20, 100)
-            #         else:
-            #             response.set_metadata("result", "reject")
-            #             response.body = "No"
-
-            #         await self.send(response)
-
-            # else:
-            #     log(
-            #         "Did not received any message after: {} seconds".format(
-            #             message_wait_timeout
-            #         )
-            #     )
+            if not local_containers:
+                log("No requested containers")
+            else:
+                log(f"Having requested containers ({len(local_containers)}/{len(body.container_ids)}):  {local_containers}")

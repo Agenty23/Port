@@ -1,6 +1,6 @@
 import random
 from typing import List
-from agents.loggingAgent import LoggingAgent
+from agents.threadCachingAgent import ThreadCachingAgent
 from spade.message import Message
 from spade.template import Template
 from spade.behaviour import (
@@ -14,24 +14,22 @@ from messageTemplates.yellowPagesAgentTemplates import (
     CraneRegistrationMsgBody,
     REGISTER_AGREE_TEMPLATE,
     REGISTER_REFUSE_TEMPLATE,
+    SERVICES_LIST_INFORM_TEMPLATE,
+    TranstainerListRequestMsgBody,
 )
-import datetime
+from messageTemplates.basicTemplates import BLOCK_TEMPLATE
+from messageTemplates.containerArrivalTemplates import (
+    CONTAINER_ARRIVAL_CFP_TEMPLATE,
+    ContainerArrivalCFPMsgBody,
+    ContainerArrivalProposeMsgBody,
+    ContainerArrivalRefuseMsgBody,
+)
+from messageTemplates.msgDecoder import decode_msg
+from datetime import datetime, timedelta
 from time import time, sleep
 
-PICKUP_PROPOSAL = Template()
-PICKUP_PROPOSAL.set_metadata("internal", "crane_price_request")
 
-DROPOFF_PROPOSAL = Template()
-DROPOFF_PROPOSAL.set_metadata("internal", "crane_dropoff_request")
-
-STAINER_OFFER_PROPOSAL = Template()
-STAINER_OFFER_PROPOSAL.set_metadata("internal", "stainer_offer_resp")
-
-TRANSTAINER_JOIN_REQUEST = Template()
-TRANSTAINER_JOIN_REQUEST.set_metadata("join", "crane_join_request")
-
-
-class CraneAgent(LoggingAgent):
+class CraneAgent(ThreadCachingAgent):
     def __init__(
         self,
         jid: str,
@@ -46,13 +44,32 @@ class CraneAgent(LoggingAgent):
         self.docks_ids = docks_ids
         self.transfer_points_ids = transfer_points_ids
         self.yellow_pages_jid = yellow_pages_jid
+        self.container_arrival_threads_body = {}
+        self.container_arrival_threads_reply_by = {}
 
     async def setup(self):
+        await super().setup()
         self.add_behaviour(
             self.RegisterBehav(),
             template=(REGISTER_AGREE_TEMPLATE | REGISTER_REFUSE_TEMPLATE),
         )
         self.log("Crane agent started")
+
+    async def get_transtainers_list(self, parent_behaviour) -> list[str]:
+        log = self.log
+
+        transtainers_list_request = TranstainerListRequestMsgBody(self.location)
+        await parent_behaviour.send(
+            transtainers_list_request.create_message(self.yellow_pages_jid)
+        )
+
+        transtainers_list = await parent_behaviour.receive(timeout=30)
+        if transtainers_list is None:
+            log("No transtainers available.")
+            return None
+
+        transtainers_list = decode_msg(transtainers_list).service_jids
+        return transtainers_list
 
     class RegisterBehav(OneShotBehaviour):
         async def run(self):
@@ -65,7 +82,9 @@ class CraneAgent(LoggingAgent):
             )
 
             await self.send(body.create_message(self.agent.yellow_pages_jid))
-            log(f"Register request sent to yellow pages agent [{self.agent.yellow_pages_jid}]")
+            log(
+                f"Register request sent to yellow pages agent [{self.agent.yellow_pages_jid}]"
+            )
 
             start_time = time()
             while time() - start_time < 30:
@@ -87,43 +106,47 @@ class CraneAgent(LoggingAgent):
             self.kill()
 
         async def on_end(self):
-            self.agent.add_behaviour(self.agent.RecvBehav())
+            self.agent.add_behaviour(
+                self.agent.ContainerArrivalCFPBehav(),
+                template=(
+                    CONTAINER_ARRIVAL_CFP_TEMPLATE | SERVICES_LIST_INFORM_TEMPLATE
+                ),
+            )
 
-    class RecvBehav(CyclicBehaviour):
+    class ContainerArrivalCFPBehav(CyclicBehaviour):
         async def run(self):
             log = self.agent.log
+            msg = await self.receive(timeout=30)
+            if not msg:
+                return
 
-            msg = await self.receive(timeout=100)
-            # if not msg:
-            #     log(
-            #         "Did not received any message after: {} seconds".format(
-            #             message_wait_timeout
-            #         )
-            #     )
-            #     return
+            log(f"Received container arrival CFP from [{msg.sender}]")
+            body = decode_msg(msg)
+            if not body:
+                log("Invalid message")
+                return
 
-            # if TRANSTAINER_JOIN_REQUEST.match(msg):
-            #     self.agent.transtainers.append(str(msg.sender))
-            #     log(f"Transtainer [{str(msg.sender)}] joined")
+            msg_reply_by = datetime.fromisoformat(msg.get_metadata("reply-by"))
+            if msg_reply_by < datetime.now() + timedelta(seconds=10):
+                log("Not enough time to process")
+                return
 
-            # elif PICKUP_PROPOSAL.match(msg):
-            #     log("Message received with content: {}".format(msg.body))
-            #     res = Message(to=str(msg.sender))
-            #     res.set_metadata("internal", "crane_offer")
-            #     res.set_metadata("client_jid", msg.get_metadata("client_jid"))
-            #     res.body = str(random.randint(20, 100))
-            #     await self.send(res)
+            transtainer_list = await self.agent.get_transtainers_list(self)
+            if not transtainer_list:
+                self.send(
+                    ContainerArrivalRefuseMsgBody().create_message(
+                        str(msg.sender), msg.thread
+                    )
+                )
+                return
 
-            # elif DROPOFF_PROPOSAL.match(msg):
-            #     log("Message received with content: {}".format(msg.body))
-            #     for stainers in self.agent.transtainers:
-            #         snd = Message(to=stainers)
-            #         snd.set_metadata("internal", "stainer_offer")
-            #         snd.set_metadata("client_jid", msg.get_metadata("client_jid"))
-            #         snd.set_metadata("arrival_date", msg.get_metadata("arrival_date"))
-            #         snd.body = msg.body
-            #         await self.send(snd)
-            #         log(f"Request sent to transtainer [{stainers}]!")
+            self.agent.container_arrival_threads_body[msg.thread] = body
+            self.agent.container_arrival_threads_reply_by[msg.thread] = msg_reply_by
 
-            # # elif STAINER_OFFER_PROPOSAL.match(msg):
-            # #     if msg.get_metadata("result") == "accept":
+            transtainer_cfp = ContainerArrivalCFPMsgBody(body.container_ids, body.date)
+            for transtainer in transtainer_list:
+                await self.send(
+                    transtainer_cfp.create_message(
+                        transtainer, msg_reply_by - timedelta(seconds=10), msg.thread
+                    )
+                )

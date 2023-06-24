@@ -13,7 +13,9 @@ CONTAINER_ARRIVAL_CFP_TEMPLATE.set_metadata("topic", "container_arrival")
 class ContainerArrivalCFPMsgBody(MsgBody):
     def __init__(self, container_ids: list[str], date: datetime):
         self.container_ids = container_ids
-        self.date = date.isoformat()
+        if isinstance(date, datetime):
+            date = date.isoformat()
+        self.date = date
 
     def create_message(self, to: str, reply_by: datetime, thread: str):
         msg = super().create_message(to, thread)

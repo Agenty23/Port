@@ -92,9 +92,9 @@ class YellowPagesAgent(LoggingAgent):
 
                 elif type(body) is CraneListRequestMsgBody:
                     log(
-                        f"Received crane list request for location {body.location} and dockId {body.dockId}"
+                        f"Received crane list request for location {body.location} and dockId {body.dock_id}"
                     )
-                    if body.dockId == None:
+                    if body.dock_id == None:
                         servicesList = [
                             x.crane_jid
                             for x in self.agent.crane_registrations
@@ -104,7 +104,7 @@ class YellowPagesAgent(LoggingAgent):
                         servicesList = [
                             x.crane_jid
                             for x in self.agent.crane_registrations
-                            if body.location == x.location and body.dockId in x.dockIds
+                            if body.location == x.location and body.dock_id in x.dock_ids
                         ]
                     replyBody = ServicesListResponseMsgBody(servicesList)
 
