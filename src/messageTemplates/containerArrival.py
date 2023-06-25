@@ -108,7 +108,7 @@ class ContainerArrivalCFPMsgBody(MsgBody):
             date = date.isoformat()
         self.date = date
 
-    def create_message(self, to: Union[JID, str], reply_by: datetime, thread: str) -> Message:
+    def create_message(self, to: Union[JID, str], reply_by: Union[datetime, str], thread: str) -> Message:
         msg = super().create_message(to, reply_by=reply_by, thread=thread)
         msg.set_metadata("performative", "cfp")
         msg.set_metadata("topic", "container_arrival")
@@ -140,8 +140,8 @@ class ContainerArrivalProposeMsgBody(MsgBody):
         self.cost = cost
         self.container_count = container_count
 
-    def create_message(self, to: Union[JID, str], thread: str) -> Message:
-        msg = super().create_message(to, thread=thread)
+    def create_message(self, to: Union[JID, str], reply_by: Union[datetime, str],  thread: str) -> Message:
+        msg = super().create_message(to, reply_by=reply_by, thread=thread)
         msg.set_metadata("performative", "propose")
         msg.set_metadata("topic", "container_arrival")
         return msg
