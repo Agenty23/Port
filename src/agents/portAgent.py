@@ -30,9 +30,7 @@ from logic.portCost import calculatePortCost
 
 class PortAgent(LoggingAgent):
     # region Agent setup and registration
-    def __init__(
-        self, jid: str, password: str, location: str, yellow_pages_jid: str
-    ) -> None:
+    def __init__(self, jid: str, password: str, location: str, yellow_pages_jid: str):
         """
         Creates a port agent instance.
 
@@ -40,6 +38,7 @@ class PortAgent(LoggingAgent):
             jid (str): Port agent's JID.
             password (str): Port agent's password.
             location (str): Port agent's location.
+            yellow_pages_jid (str): Yellow pages agent's JID.
         """
         super().__init__(jid, password)
         self.location = location
@@ -50,7 +49,7 @@ class PortAgent(LoggingAgent):
             self.RegisterBehav(),
             template=(REGISTER_AGREE_TEMPLATE() | REGISTER_REFUSE_TEMPLATE()),
         )
-        self.log("PortAgent started")
+        self.log("Port agent started")
 
     class RegisterBehav(OneShotBehaviour):
         def __init__(self):
@@ -69,7 +68,7 @@ class PortAgent(LoggingAgent):
 
             reply_by = datetime.now() + timedelta(seconds=30)
             while datetime.now() < reply_by:
-                reply = await self.receive(timeout=30)
+                reply = await self.receive(timeout=(reply_by - datetime.now()).seconds)
                 if not reply or str(reply.sender) != self.agent.yellow_pages_jid:
                     continue
 
@@ -99,8 +98,6 @@ class PortAgent(LoggingAgent):
     # region Utility methods
     async def get_cranes_list(self, parent_behaviour: object) -> list[str]:
         """Sends request to yellow pages agent for cranes list in the port location"""
-        log = self.log
-
         cranes_list_request = CraneListQueryRefMsgBody(self.location)
         await parent_behaviour.send(
             cranes_list_request.create_message(self.yellow_pages_jid)
@@ -206,7 +203,7 @@ class PortAgent(LoggingAgent):
             self.agent: PortAgent
             log = self.agent.log
 
-            proposals = {}
+            crane_proposals = {}
             responses_received = 0
             reply_by = datetime.now() + timedelta(seconds=60)
             while (
@@ -226,7 +223,7 @@ class PortAgent(LoggingAgent):
                     log("Invalid message")
                     continue
 
-                if datetime.now() + timedelta(seconds=60) > response_reply_by:
+                if datetime.now() + timedelta(seconds=10) > response_reply_by:
                     log("Not enough time to process")
                     responses_received += 1
                     continue
@@ -234,7 +231,7 @@ class PortAgent(LoggingAgent):
                 if isinstance(response_body, ContainerArrivalProposeMsgBody):
                     log(f"Received container arrival proposal from [{response.sender}]")
                     responses_received += 1
-                    proposals[response.sender] = response_body
+                    crane_proposals[response.sender] = response_body
                     reply_by = min(reply_by, response_reply_by)
                 elif isinstance(response_body, ContainerArrivalRefuseMsgBody):
                     log(f"Received container arrival refuse from [{response.sender}]")
@@ -242,7 +239,7 @@ class PortAgent(LoggingAgent):
                 else:
                     log("Unexpected message")
 
-            if not proposals:
+            if not crane_proposals:
                 log("No proposals received")
                 self.send(
                     ContainerArrivalRefuseMsgBody().create_message(
@@ -255,19 +252,23 @@ class PortAgent(LoggingAgent):
                 port_cost,
                 accepted_containers_count,
                 accepted_cranes,
-            ) = calculatePortCost(self.date, proposals)
+            ) = calculatePortCost(self.date, crane_proposals)
 
             log(
-                f"Able to accept {accepted_containers_count} containers. Sending container arrival proposal to [{self.operator_jid}]."
+                f"Able to accept {accepted_containers_count} containers with cost {port_cost}. Sending container arrival proposal to [{self.operator_jid}]."
             )
             self.send(
                 ContainerArrivalProposeMsgBody(
                     port_cost,
                     accepted_containers_count,
-                ).create_message(self.operator_jid, reply_by=reply_by - timedelta(seconds=10), thread=self.thread)
+                ).create_message(
+                    self.operator_jid,
+                    reply_by=reply_by - timedelta(seconds=10),
+                    thread=self.thread,
+                )
             )
 
-            for crane in proposals.keys():
+            for crane in crane_proposals.keys():
                 if str(crane) not in accepted_cranes:
                     self.send(
                         ContainerArrivalRejectProposalMsgBody().create_message(
@@ -278,7 +279,7 @@ class PortAgent(LoggingAgent):
             if accepted_containers_count > 0:
                 self.agent.add_behaviour(
                     self.agent.ContainerArrivalAcceptProposalBehav(
-                        self.thread, accepted_cranes
+                        self.thread, reply_by, accepted_cranes
                     ),
                     template=(
                         CONTAINER_ARRIVAL_ACCEPT_PROPOSAL_TEMPLATE(self.thread)
@@ -287,7 +288,12 @@ class PortAgent(LoggingAgent):
                 )
 
     class ContainerArrivalAcceptProposalBehav(OneShotBehaviour):
-        def __init__(self, thread: str, reply_by: Union[datetime, str], accepted_cranes: list[str]):
+        def __init__(
+            self,
+            thread: str,
+            reply_by: Union[datetime, str],
+            accepted_cranes: list[str],
+        ):
             """
             Behaviour handling container arrival proposal acceptance / rejection from operator.
 
@@ -317,14 +323,17 @@ class PortAgent(LoggingAgent):
                 proposal_response_body = decode_msg(proposal_response)
                 if not proposal_response_body:
                     log("Invalid message")
-                elif isinstance(proposal_response_body, ContainerArrivalAcceptProposalMsgBody):
+                elif isinstance(
+                    proposal_response_body, ContainerArrivalAcceptProposalMsgBody
+                ):
                     log("Proposal accepted")
                     proposal_accepted = True
-                elif isinstance(proposal_response_body, ContainerArrivalRejectProposalMsgBody):
+                elif isinstance(
+                    proposal_response_body, ContainerArrivalRejectProposalMsgBody
+                ):
                     log("Proposal rejected")
                 else:
                     log("Unexpected message")
-
 
             if proposal_accepted:
                 crane_reply = ContainerArrivalAcceptProposalMsgBody()
@@ -332,8 +341,6 @@ class PortAgent(LoggingAgent):
                 crane_reply = ContainerArrivalRejectProposalMsgBody()
 
             for crane in self.accepted_cranes:
-                self.send(
-                    crane_reply.create_message(crane, thread=self.thread)
-                )
+                self.send(crane_reply.create_message(crane, thread=self.thread))
 
     # endregion
