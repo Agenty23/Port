@@ -101,7 +101,11 @@ class OperatorAgent(LoggingAgent):
         return port_list
 
     class PickupContainerBehav(OneShotBehaviour):
-        async def run(self):
+        def __init__(self) -> None:
+            """Behaviour that requests departure of given containers."""
+            super().__init__()
+
+        async def run(self) -> None:
             self.agent: OperatorAgent
             log = self.agent.log
             log(f"Requesting pick up of containers (on {self.agent.date}):")
@@ -113,10 +117,35 @@ class OperatorAgent(LoggingAgent):
                 return
 
             reply_by = datetime.now() + timedelta(seconds=60)
+            # TODO
+
+        async def on_end(self) -> None:
+            self.agent.log("Shutting down ...")
+            await self.agent.stop()
+
+    class DropoffContainerBehav(OneShotBehaviour):
+        def __init__(self) -> None:
+            """Behaviour that requests arrival of given containers."""
+            super().__init__()
+
+        async def run(self) -> None:
+            self.agent: OperatorAgent
+            log = self.agent.log
+            log(f"Requesting container arrival of containers (on {self.agent.date}):")
+            log(",".join(self.agent.container_ids))
+
+            port_list = await self.agent.get_port_list(self, self.agent.location)
+            if port_list is None:
+                log("No port available.")
+                return
+
+            reply_by = datetime.now() + timedelta(seconds=60)
             cfp = ContainerArrivalCFPMsgBody(self.agent.container_ids, self.agent.date)
             thread = uuid4().hex
             for port in port_list:
-                await self.send(cfp.create_message(port, reply_by=reply_by, thread=thread))
+                await self.send(
+                    cfp.create_message(port, reply_by=reply_by, thread=thread)
+                )
                 log(f"Container arrival CFP sent to port [{port}].")
 
             log(f"Waiting for responses till {reply_by} ...")
@@ -141,14 +170,14 @@ class OperatorAgent(LoggingAgent):
 
             min_cost_port = min(cost_port_map, key=cost_port_map.get)
             log(
-                f"Container pickup accepted by {min_cost_port} with cost {cost_port_map[min_cost_port]}"
+                f"Container arrival proposition from {min_cost_port} with cost {cost_port_map[min_cost_port]} accepted"
             )
             await self.send(
                 ContainerArrivalAcceptProposalMsgBody().create_message(
                     min_cost_port, thread=thread
                 )
             )
-            
+
             for port in cost_port_map:
                 if port != min_cost_port:
                     await self.send(
@@ -157,18 +186,6 @@ class OperatorAgent(LoggingAgent):
                         )
                     )
 
-        async def on_end(self):
-            self.agent.log("Shutting down ...")
-            await self.agent.stop()
-
-    class DropoffContainerBehav(OneShotBehaviour):
-        async def run(self):
-            log = self.agent.log
-            log(f"Requesting drop off of containers (on {self.agent.date}):")
-            log(",".join(self.agent.container_ids))
-
-            portList = await self.agent.get_port_list(self, self.agent.location)
-
-        async def on_end(self):
+        async def on_end(self) -> None:
             self.agent.log("Shutting down ...")
             await self.agent.stop()

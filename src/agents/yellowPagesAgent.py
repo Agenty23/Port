@@ -42,11 +42,11 @@ class YellowPagesAgent(LoggingAgent):
     # endregion
 
     class RegisterBehav(CyclicBehaviour):
-        def __init__(self):
+        def __init__(self) -> None:
             """Behaviour that listens for incoming agent's registration requests."""
             super().__init__()
 
-        async def run(self):
+        async def run(self) -> None:
             self.agent: YellowPagesAgent
             log = self.agent.log
 
@@ -75,11 +75,11 @@ class YellowPagesAgent(LoggingAgent):
             await self.send(RegistrationAgreeMsgBody().create_message(str(msg.sender)))
 
     class ServiceListBehav(CyclicBehaviour):
-        def __init__(self):
+        def __init__(self) -> None:
             """Behaviour that listens for incoming service list queries."""
             super().__init__()
 
-        async def run(self):
+        async def run(self) -> None:
             self.agent: YellowPagesAgent
             log = self.agent.log
 
@@ -94,7 +94,8 @@ class YellowPagesAgent(LoggingAgent):
             if type(body) is PortListQueryRefMsgBody:
                 log(f"Received port list request for location {body.location}")
                 services = [
-                    x for x in self.agent.port_registrations
+                    x
+                    for x in self.agent.port_registrations
                     if body.location == x.location
                 ]
             elif type(body) is CraneListQueryRefMsgBody:
@@ -107,11 +108,7 @@ class YellowPagesAgent(LoggingAgent):
                     if body.location == x.location
                 ]
                 if body.dock_ids != None:
-                    services = [
-                        x
-                        for x in services
-                        if x.dock_id in body.dock_ids
-                    ]
+                    services = [x for x in services if x.dock_id in body.dock_ids]
                 if body.transfer_point_ids != None:
                     services = [
                         x
