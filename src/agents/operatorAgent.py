@@ -101,7 +101,7 @@ class OperatorAgent(LoggingAgent):
         return port_list
 
     class PickupContainerBehav(OneShotBehaviour):
-        def __init__(self) -> None:
+        def __init__(self):
             """Behaviour that requests departure of given containers."""
             super().__init__()
 
@@ -120,11 +120,12 @@ class OperatorAgent(LoggingAgent):
             # TODO
 
         async def on_end(self) -> None:
+            self.agent: OperatorAgent
             self.agent.log("Shutting down ...")
             await self.agent.stop()
 
     class DropoffContainerBehav(OneShotBehaviour):
-        def __init__(self) -> None:
+        def __init__(self):
             """Behaviour that requests arrival of given containers."""
             super().__init__()
 
@@ -187,5 +188,6 @@ class OperatorAgent(LoggingAgent):
                     )
 
         async def on_end(self) -> None:
+            self.agent: OperatorAgent
             self.agent.log("Shutting down ...")
             await self.agent.stop()

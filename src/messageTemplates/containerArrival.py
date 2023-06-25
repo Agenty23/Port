@@ -91,7 +91,7 @@ def CONTAINER_ARRIVAL_ACCEPT_PROPOSAL_TEMPLATE(
 
 
 class ContainerArrivalCFPMsgBody(MsgBody):
-    def __init__(self, container_ids: list[str], date: datetime) -> None:
+    def __init__(self, container_ids: list[str], date: datetime):
         """
         Container arrival CFP message body.
 
@@ -116,6 +116,11 @@ class ContainerArrivalCFPMsgBody(MsgBody):
 
 
 class ContainerArrivalRefuseMsgBody(MsgBody):
+    def __init__(self):
+        """Refusal of container arrival CFP."""
+        super().__init__()
+
+
     def create_message(self, to: Union[JID, str], thread: str) -> Message:
         msg = super().create_message(to, thread=thread)
         msg.set_metadata("performative", "refuse")
@@ -124,7 +129,14 @@ class ContainerArrivalRefuseMsgBody(MsgBody):
 
 
 class ContainerArrivalProposeMsgBody(MsgBody):
-    def __init__(self, cost: float, container_count: int) -> None:
+    def __init__(self, cost: float, container_count: int):
+        """
+        Proposes for CFP of container arrival.
+
+        Args:
+            cost (float): Best cost of container arrival.
+            container_count (int): Number of containers that can be handled.
+        """
         self.cost = cost
         self.container_count = container_count
 
@@ -136,6 +148,10 @@ class ContainerArrivalProposeMsgBody(MsgBody):
 
 
 class ContainerArrivalRejectProposalMsgBody(MsgBody):
+    def __init__(self):
+        """Rejects proposal of container arrival."""
+        super().__init__()
+
     def create_message(self, to: Union[JID, str], thread: str):
         msg = super().create_message(to, thread=thread)
         msg.set_metadata("performative", "reject-proposal")
@@ -144,6 +160,10 @@ class ContainerArrivalRejectProposalMsgBody(MsgBody):
 
 
 class ContainerArrivalAcceptProposalMsgBody(MsgBody):
+    def __init__(self):
+        """Accepts proposal of container arrival."""
+        super().__init__()
+
     def create_message(self, to: Union[JID, str], thread: str):
         msg = super().create_message(to, thread=thread)
         msg.set_metadata("performative", "accept-proposal")

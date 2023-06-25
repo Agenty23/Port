@@ -19,7 +19,7 @@ from messageTemplates.servicesListRequest import (
 
 class YellowPagesAgent(LoggingAgent):
     # region Agent setup and registration
-    def __init__(self, jid: str, password: str) -> None:
+    def __init__(self, jid: str, password: str):
         """
         Creates a yellow pages agent instance.
 
@@ -42,7 +42,7 @@ class YellowPagesAgent(LoggingAgent):
     # endregion
 
     class RegisterBehav(CyclicBehaviour):
-        def __init__(self) -> None:
+        def __init__(self):
             """Behaviour that listens for incoming agent's registration requests."""
             super().__init__()
 
@@ -75,7 +75,7 @@ class YellowPagesAgent(LoggingAgent):
             await self.send(RegistrationAgreeMsgBody().create_message(str(msg.sender)))
 
     class ServiceListBehav(CyclicBehaviour):
-        def __init__(self) -> None:
+        def __init__(self):
             """Behaviour that listens for incoming service list queries."""
             super().__init__()
 

@@ -42,7 +42,7 @@ class ServicesListQueryRefMsgBody(MsgBody):
 
 
 class PortListQueryRefMsgBody(ServicesListQueryRefMsgBody):
-    def __init__(self, location: str) -> None:
+    def __init__(self, location: str):
         """
         Request for ports list from yellow pages agent.
 
@@ -79,7 +79,7 @@ class CraneListQueryRefMsgBody(ServicesListQueryRefMsgBody):
 
 
 class TranstainerListQueryRefMsgBody(ServicesListQueryRefMsgBody):
-    def __init__(self, location: str, transfer_point_ids: Optional[list[int]] = None) -> None:
+    def __init__(self, location: str, transfer_point_ids: Optional[list[int]] = None):
         """
         Request for transtainers list from yellow pages agent.
 
@@ -95,7 +95,7 @@ class TranstainerListQueryRefMsgBody(ServicesListQueryRefMsgBody):
 
 
 class ServicesListInformMsgBody(MsgBody):
-    def __init__(self, service_jids: list[str]) -> None:
+    def __init__(self, service_jids: list[str]):
         """
         Response for services list query from yellow pages agent.
 
