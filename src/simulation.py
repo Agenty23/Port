@@ -1,6 +1,6 @@
 from time import sleep
 from datetime import datetime
-from agents.operatorAgent import OperatorAgent
+from agents.operatorAgent import OperatorAgent, OperatorAgentAction
 from agents.portAgent import PortAgent
 from agents.craneAgent import CraneAgent
 from agents.transtainerAgent import TranstainerAgent
@@ -74,31 +74,31 @@ for i in range(num_of_transtainers):
     trainstainers[i].start().result()
 
 try:
-    # sleep(5)
+    sleep(5)
 
-    # operator = OperatorAgent(
-    #     operator_base_jid + "/1",
-    #     operator_password,
-    #     "pickup",
-    #     rand.sample(container_ids_taken, 3),
-    #     datetime.now(),
-    #     "Gdansk",
-    #     yellow_pages_jid
-    # )
-    # operator.start().result()
+    operator = OperatorAgent(
+        operator_base_jid + "/1",
+        operator_password,
+        OperatorAgentAction.PICKUP,
+        rand.sample(container_ids_taken, 3),
+        datetime.now(),
+        "Gdansk",
+        yellow_pages_jid
+    )
+    operator.start().result()
 
-    # sleep(5)
+    sleep(5)
 
-    # operator = OperatorAgent(
-    #     operator_base_jid + "/2",
-    #     operator_password,
-    #     "dropoff",
-    #     rand.sample(container_ids_pool, 3),
-    #     datetime.now(),
-    #     "Gdansk",
-    #     yellow_pages_jid
-    # )
-    # operator.start().result()
+    operator = OperatorAgent(
+        operator_base_jid + "/2",
+        operator_password,
+        OperatorAgentAction.DROP,
+        rand.sample(container_ids_pool, 3),
+        datetime.now(),
+        "Gdansk",
+        yellow_pages_jid
+    )
+    operator.start().result()
     
     while True:
         sleep(1)
