@@ -74,31 +74,31 @@ for i in range(num_of_transtainers):
     trainstainers[i].start().result()
 
 try:
-    sleep(5)
+    # sleep(5)
 
-    operator = OperatorAgent(
-        operator_base_jid + "/1",
-        operator_password,
-        "pickup",
-        rand.sample(container_ids_taken, 3),
-        datetime.now(),
-        "Gdansk",
-        yellow_pages_jid
-    )
-    operator.start().result()
+    # operator = OperatorAgent(
+    #     operator_base_jid + "/1",
+    #     operator_password,
+    #     "pickup",
+    #     rand.sample(container_ids_taken, 3),
+    #     datetime.now(),
+    #     "Gdansk",
+    #     yellow_pages_jid
+    # )
+    # operator.start().result()
 
-    sleep(5)
+    # sleep(5)
 
-    operator = OperatorAgent(
-        operator_base_jid + "/2",
-        operator_password,
-        "dropoff",
-        rand.sample(container_ids_pool, 3),
-        datetime.now(),
-        "Gdansk",
-        yellow_pages_jid
-    )
-    operator.start().result()
+    # operator = OperatorAgent(
+    #     operator_base_jid + "/2",
+    #     operator_password,
+    #     "dropoff",
+    #     rand.sample(container_ids_pool, 3),
+    #     datetime.now(),
+    #     "Gdansk",
+    #     yellow_pages_jid
+    # )
+    # operator.start().result()
     
     while True:
         sleep(1)
@@ -109,8 +109,5 @@ except KeyboardInterrupt:
     crane.stop()
     for transtainer in trainstainers:
         transtainer.stop()
-    operator.stop()
+    # operator.stop()
     yellow_pages.stop()
-
-    
-# operator.stop()

@@ -1,21 +1,24 @@
 from json import loads
+from typing import Optional
 from spade.message import Message
 from datetime import datetime
-import messageTemplates.basicTemplates as bt
-import messageTemplates.yellowPagesAgentTemplates as ypat
-import messageTemplates.containerArrivalTemplates as cat
+from messageTemplates.msgBody import MsgBody
+import messageTemplates.agentRegistration as ar
+import messageTemplates.servicesListRequest as slr
+import messageTemplates.containerArrival as cat
 
 msg_body_classes = {
-    "NotUnderstoodMsgBody" : bt.NotUnderstoodMsgBody,
-    "PortRegistrationMsgBody" : ypat.PortRegistrationMsgBody,
-    "CraneRegistrationMsgBody" : ypat.CraneRegistrationMsgBody,
-    "TranstainerRegistrationMsgBody" : ypat.TranstainerRegistrationMsgBody,
-    "PortListRequestMsgBody" : ypat.PortListRequestMsgBody,
-    "CraneListRequestMsgBody" : ypat.CraneListRequestMsgBody,
-    "TranstainerListRequestMsgBody" : ypat.TranstainerListRequestMsgBody,
-    "ServicesListResponseMsgBody" : ypat.ServicesListResponseMsgBody,
-    "RegistrationAgreeResponseMsgBody" : ypat.RegistrationAgreeResponseMsgBody,
-    "RegistrationRefuseResponseMsgBody" : ypat.RegistrationRefuseResponseMsgBody,
+    "PortRegistrationMsgBody" : ar.PortRegistrationRequestMsgBody,
+    "CraneRegistrationRequestMsgBody" : ar.CraneRegistrationRequestMsgBody,
+    "TranstainerRegistrationRequestMsgBody" : ar.TranstainerRegistrationRequestMsgBody,
+    "RegistrationAgreeMsgBody" : ar.RegistrationAgreeMsgBody,
+    "RegistrationRefuseMsgBody" : ar.RegistrationRefuseMsgBody,
+
+    "PortListQueryRefMsgBody" : slr.PortListRequestMsgBody,
+    "CraneListQueryRefMsgBody" : slr.CraneListQueryRefMsgBody,
+    "TranstainerListQueryRefMsgBody" : slr.TranstainerListQueryRefMsgBody,
+    "ServicesListInformMsgBody" : slr.ServicesListInformMsgBody,
+
     "ContainerArrivalCFPMsgBody" : cat.ContainerArrivalCFPMsgBody,
     "ContainerArrivalRefuseMsgBody" : cat.ContainerArrivalRefuseMsgBody,
     "ContainerArrivalProposeMsgBody" : cat.ContainerArrivalProposeMsgBody,
@@ -23,7 +26,13 @@ msg_body_classes = {
     "ContainerArrivalAcceptProposalMsgBody" : cat.ContainerArrivalAcceptProposalMsgBody,
 }
 
-def decode_msg(msg: Message) -> object:
+def decode_msg(msg: Message) -> Optional[MsgBody]:
+    """
+    Decodes a message body into a corresponding object.
+
+    Args:
+        msg (spade.message.Message): Message to decode.
+    """
     msgBody = loads(msg.body)
     if type(msgBody) is not dict:
         return None
@@ -33,4 +42,5 @@ def decode_msg(msg: Message) -> object:
         msgBody[key]['date'] = datetime.fromisoformat(msgBody[key]['date'])
     if key in msg_body_classes:
         return msg_body_classes[key](**msgBody[key])
+    
     return None
