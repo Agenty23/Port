@@ -59,39 +59,39 @@ class CraneListQueryRefMsgBody(ServicesListQueryRefMsgBody):
     def __init__(
         self,
         location: str,
-        dock_id: Optional[int] = None,
-        transfer_point_id: Optional[int] = None,
+        dock_ids: Optional[list[int]] = None,
+        transfer_point_ids: Optional[list[int]] = None,
     ) -> None:
         """
         Request for cranes list from yellow pages agent.
 
         Args:
             location (str): Crane location.
-            dock_id (Optional[int]): Dock ID served by crane.
-            transfer_point_id (Optional[int]): Transfer point ID served by crane.
+            dock_ids (list[int], optional): List of dock IDs served by crane (at least one match required).
+            transfer_point_ids (list[int], optional): List of transfer point IDs served by crane (at least one match required).
 
         Response:
             - ServicesListResponseMsgBody
         """
         self.location = location
-        self.dock_id = dock_id
-        self.transfer_point_id = transfer_point_id
+        self.dock_ids = dock_ids
+        self.transfer_point_ids = transfer_point_ids
 
 
 class TranstainerListQueryRefMsgBody(ServicesListQueryRefMsgBody):
-    def __init__(self, location: str, transfer_point_id: Optional[int] = None) -> None:
+    def __init__(self, location: str, transfer_point_ids: Optional[list[int]] = None) -> None:
         """
         Request for transtainers list from yellow pages agent.
 
         Args:
             location (str): Transtainer location.
-            transfer_point_id (Optional[int]): Transfer point ID served by transtainer.
+            transfer_point_ids (list[int], optional): List of transfer point IDs served by transtainer (at least one match required).
 
         Response:
             - ServicesListResponseMsgBody
         """
         self.location = location
-        self.transfer_point_id = transfer_point_id
+        self.transfer_point_ids = transfer_point_ids
 
 
 class ServicesListInformMsgBody(MsgBody):

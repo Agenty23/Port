@@ -55,26 +55,26 @@ class RegistrationRequestMsgBody(MsgBody):
 
 
 class PortRegistrationRequestMsgBody(RegistrationRequestMsgBody):
-    def __init__(self, port_jid: str, location: str):
+    def __init__(self, jid: str, location: str):
         """
         Request for port registration in yellow pages agent.
 
         Args:
-            port_jid (str): Port agent's JID.
+            jid (str): Port agent's JID.
             location (str): Port agent's location.
 
         Response:
             - RegistrationAgreeResponseMsgBody
             - RegistrationRefuseResponseMsgBody
         """
-        self.port_jid = port_jid
+        self.jid = jid
         self.location = location
 
 
 class CraneRegistrationRequestMsgBody(RegistrationRequestMsgBody):
     def __init__(
         self,
-        crane_jid: str,
+        jid: str,
         location: str,
         dock_ids: list[int],
         transfer_point_ids: list[int],
@@ -83,7 +83,7 @@ class CraneRegistrationRequestMsgBody(RegistrationRequestMsgBody):
         Request for crane registration in yellow pages agent.
 
         Args:
-            crane_jid (str): Crane agent's JID.
+            jid (str): Crane agent's JID.
             location (str): Crane agent's location.
             dock_ids (list[int]): List of docks IDs that crane can serve.
             transfer_point_ids (list[int]): List of transfer points IDs that crane can serve.
@@ -92,19 +92,19 @@ class CraneRegistrationRequestMsgBody(RegistrationRequestMsgBody):
             - RegistrationAgreeResponseMsgBody
             - RegistrationRefuseResponseMsgBody
         """
-        self.crane_jid = crane_jid
+        self.jid = jid
         self.location = location
         self.dock_ids = dock_ids
         self.transfer_point_ids = transfer_point_ids
 
 
 class TranstainerRegistrationRequestMsgBody(RegistrationRequestMsgBody):
-    def __init__(self, transtainer_jid: str, location: str, transfer_point_id: int):
+    def __init__(self, jid: str, location: str, transfer_point_id: int):
         """
         Request for transtainer registration in yellow pages agent.
 
         Args:
-            transtainer_jid (str): Transtainer agent's JID.
+            jid (str): Transtainer agent's JID.
             location (str): Transtainer agent's location.
             transfer_point_id (int): Transfer point ID that transtainer can serve.
 
@@ -112,7 +112,7 @@ class TranstainerRegistrationRequestMsgBody(RegistrationRequestMsgBody):
             - RegistrationAgreeResponseMsgBody
             - RegistrationRefuseResponseMsgBody
         """
-        self.transtainer_jid = transtainer_jid
+        self.jid = jid
         self.location = location
         self.transfer_point_id = transfer_point_id
 
