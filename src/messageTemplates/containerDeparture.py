@@ -72,7 +72,7 @@ def CONTAINER_DEPARTURE_REJECT_PROPOSAL_TEMPLATE(
     return t
 
 
-class ContainerDepartureCFPMsgBoyd(MsgBody):
+class ContainerDepartureCFPMsgBody(MsgBody):
     def __init__(self, container_ids: list[str], date: datetime):
         """
         Container departure CFP message body.
@@ -108,18 +108,20 @@ class ContainerDepartureRefuseMsgBody(MsgBody):
 
 
 class ContainerDepartureProposeMsgBody(MsgBody):
-    def __init__(self, cost: float):
+    def __init__(self, cost: float, container_ids: list[str]):
         """
         Propose for CFP of container departure.
 
         Args:
             cost (float): Cost of container departure.
+            container_ids (list[str]): List of container IDs which can be departed.
 
         Response:
             - ContainerDepartureRejectProposalMsgBody
             - ContainerDepartureAcceptProposalMsgBody
         """
         self.cost = cost
+        self.container_ids = container_ids
 
     def create_message(
         self, to: Union[JID, str], reply_by: Union[datetime, str], thread: str
