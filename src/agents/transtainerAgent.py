@@ -91,10 +91,10 @@ class TranstainerAgent(LoggingAgent):
                 if not reply or str(reply.sender) != self.agent.yellow_pages_jid:
                     continue
 
-                if REGISTER_AGREE_TEMPLATE.match(reply):
+                if REGISTER_AGREE_TEMPLATE().match(reply):
                     log("Registration accepted")
                     return
-                elif REGISTER_REFUSE_TEMPLATE.match(reply):
+                elif REGISTER_REFUSE_TEMPLATE().match(reply):
                     log("Registration refused")
                     break
                 else:

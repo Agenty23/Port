@@ -55,7 +55,7 @@ class RegistrationRequestMsgBody(MsgBody):
 
 
 class PortRegistrationRequestMsgBody(RegistrationRequestMsgBody):
-    def __init__(self, jid: str, location: str):
+    def __init__(self, jid: JID, location: str):
         """
         Request for port registration in yellow pages agent.
 
@@ -67,14 +67,14 @@ class PortRegistrationRequestMsgBody(RegistrationRequestMsgBody):
             - RegistrationAgreeResponseMsgBody
             - RegistrationRefuseResponseMsgBody
         """
-        self.jid = jid
+        self.jid = str(jid)
         self.location = location
 
 
 class CraneRegistrationRequestMsgBody(RegistrationRequestMsgBody):
     def __init__(
         self,
-        jid: str,
+        jid: JID,
         location: str,
         dock_ids: list[int],
         transfer_point_ids: list[int],
@@ -92,14 +92,14 @@ class CraneRegistrationRequestMsgBody(RegistrationRequestMsgBody):
             - RegistrationAgreeResponseMsgBody
             - RegistrationRefuseResponseMsgBody
         """
-        self.jid = jid
+        self.jid = str(jid)
         self.location = location
         self.dock_ids = dock_ids
         self.transfer_point_ids = transfer_point_ids
 
 
 class TranstainerRegistrationRequestMsgBody(RegistrationRequestMsgBody):
-    def __init__(self, jid: str, location: str, transfer_point_id: int):
+    def __init__(self, jid: JID, location: str, transfer_point_id: int):
         """
         Request for transtainer registration in yellow pages agent.
 
@@ -112,7 +112,7 @@ class TranstainerRegistrationRequestMsgBody(RegistrationRequestMsgBody):
             - RegistrationAgreeResponseMsgBody
             - RegistrationRefuseResponseMsgBody
         """
-        self.jid = jid
+        self.jid = str(jid)
         self.location = location
         self.transfer_point_id = transfer_point_id
 

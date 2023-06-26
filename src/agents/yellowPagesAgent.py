@@ -59,14 +59,14 @@ class YellowPagesAgent(LoggingAgent):
                 log("Got invalid message!")
                 return
 
-            if type(body) is PortRegistrationRequestMsgBody():
-                log(f"Port [{body.port_jid}] registered!")
+            if isinstance(body, PortRegistrationRequestMsgBody):
+                log(f"Port [{body.jid}] registered!")
                 self.agent.port_registrations.append(body)
-            elif type(body) is CraneRegistrationRequestMsgBody:
-                log(f"Crane [{body.crane_jid}] registered!")
+            elif isinstance(body, CraneRegistrationRequestMsgBody):
+                log(f"Crane [{body.jid}] registered!")
                 self.agent.crane_registrations.append(body)
-            elif type(body) is TranstainerRegistrationRequestMsgBody:
-                log(f"Transtainer [{body.transtainer_jid}] registered!")
+            elif isinstance(body, TranstainerRegistrationRequestMsgBody):
+                log(f"Transtainer [{body.jid}] registered!")
                 self.agent.transtainer_registrations.append(body)
             else:
                 log("Got message with unknown body!")

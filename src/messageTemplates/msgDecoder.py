@@ -8,13 +8,13 @@ import messageTemplates.servicesListRequest as slr
 import messageTemplates.containerArrival as cat
 
 msg_body_classes = {
-    "PortRegistrationMsgBody" : ar.PortRegistrationRequestMsgBody,
+    "PortRegistrationRequestMsgBody" : ar.PortRegistrationRequestMsgBody,
     "CraneRegistrationRequestMsgBody" : ar.CraneRegistrationRequestMsgBody,
     "TranstainerRegistrationRequestMsgBody" : ar.TranstainerRegistrationRequestMsgBody,
     "RegistrationAgreeMsgBody" : ar.RegistrationAgreeMsgBody,
     "RegistrationRefuseMsgBody" : ar.RegistrationRefuseMsgBody,
 
-    "PortListQueryRefMsgBody" : slr.PortListRequestMsgBody,
+    "PortListQueryRefMsgBody" : slr.PortListQueryRefMsgBody,
     "CraneListQueryRefMsgBody" : slr.CraneListQueryRefMsgBody,
     "TranstainerListQueryRefMsgBody" : slr.TranstainerListQueryRefMsgBody,
     "ServicesListInformMsgBody" : slr.ServicesListInformMsgBody,

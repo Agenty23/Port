@@ -72,10 +72,10 @@ class PortAgent(LoggingAgent):
                 if not reply or str(reply.sender) != self.agent.yellow_pages_jid:
                     continue
 
-                if REGISTER_AGREE_TEMPLATE.match(reply):
+                if REGISTER_AGREE_TEMPLATE().match(reply):
                     log("Registration accepted")
                     return
-                elif REGISTER_REFUSE_TEMPLATE.match(reply):
+                elif REGISTER_REFUSE_TEMPLATE().match(reply):
                     log("Registration refused")
                     break
                 else:
@@ -174,7 +174,7 @@ class PortAgent(LoggingAgent):
     class ContainerArrivalProposalBehav(OneShotBehaviour):
         def __init__(
             self,
-            operator_jid: Union(JID, str),
+            operator_jid: Union[JID, str],
             reply_by: datetime,
             thread: str,
             container_ids: list[str],
