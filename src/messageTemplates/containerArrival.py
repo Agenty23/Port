@@ -136,6 +136,10 @@ class ContainerArrivalProposeMsgBody(MsgBody):
         Args:
             cost (float): Best cost of container arrival.
             container_count (int): Number of containers that can be handled.
+
+        Response:
+            - ContainerArrivalAcceptProposalMsgBody
+            - ContainerArrivalRejectProposalMsgBody
         """
         self.cost = cost
         self.container_count = container_count
