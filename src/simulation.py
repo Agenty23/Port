@@ -60,7 +60,9 @@ for i in range(num_of_transtainers):
                     container_ids_taken.append(yard[x][y][z])
                 else:
                     break
-                
+
+    print("Yard for transtainer " + str(i + 1) + ":")
+    print(yard)
 
     trainstainers.append(
         TranstainerAgent(
@@ -75,13 +77,13 @@ for i in range(num_of_transtainers):
     trainstainers[i].start().result()
 
 try:
-    sleep(2)
+    sleep(5)
 
     operator = OperatorAgent(
         operator_base_jid + "/1",
         operator_password,
         OperatorAgentAction.PICKUP,
-        rand.choices(container_ids_taken, k=3),
+        rand.sample(container_ids_taken, k=3),
         datetime.now(),
         "Gdansk",
         yellow_pages_jid
@@ -94,7 +96,7 @@ try:
         operator_base_jid + "/2",
         operator_password,
         OperatorAgentAction.DROPOFF,
-        rand.choices(container_ids_pool, k=3),
+        rand.sample(container_ids_pool, k=3),
         datetime.now(),
         "Gdansk",
         yellow_pages_jid

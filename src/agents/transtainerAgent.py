@@ -273,10 +273,19 @@ class TranstainerAgent(LoggingAgent):
             if not cfp_body:
                 log("Invalid message")
                 return
-
+            
             cfp_reply_by = datetime.fromisoformat(cfp.get_metadata("reply-by"))
             if cfp_reply_by < datetime.now() + timedelta(seconds=10):
                 log("Not enough time to process")
+                return
+            
+            if not any([x in self.agent.yard.flatten() for x in cfp_body.container_ids]):
+                log("Containers not in yard")
+                await self.send(
+                    ContainerDepartureRefuseMsgBody().create_message(
+                        cfp.sender, cfp.thread
+                    )
+                )
                 return
 
             crane_list = await self.agent.get_cranes_list(self)
@@ -355,7 +364,6 @@ class TranstainerAgent(LoggingAgent):
                 if not response:
                     continue
 
-                response_reply_by = datetime.fromisoformat(response.get_metadata("reply-by"))
 
                 response_body = decode_msg(response)
                 if not response_body:
@@ -373,6 +381,7 @@ class TranstainerAgent(LoggingAgent):
                     )
                     responses_received += 1
                     crane_proposals[str(response.sender)] = response_body
+                    response_reply_by = datetime.fromisoformat(response.get_metadata("reply-by"))
                     reply_by = min(reply_by, response_reply_by)
                 elif isinstance(response_body, ContainerDepartureRefuseMsgBody):
                     log(

@@ -250,23 +250,24 @@ class CraneAgent(LoggingAgent):
                 if not response:
                     continue
 
-                response_reply_by = datetime.fromisoformat(
-                    response.get_metadata("reply-by")
-                )
 
                 response_body = decode_msg(response)
                 if not response_body:
                     log("Invalid message")
                     continue
 
-                if datetime.now() + timedelta(seconds=10) > response_reply_by:
-                    log("Not enough time to process")
-                    responses_received += 1
-                    continue
-
                 if isinstance(response_body, ContainerArrivalProposeMsgBody):
                     log(f"Received container arrival proposal from [{response.sender}]")
                     responses_received += 1
+                    response_reply_by = datetime.fromisoformat(
+                        response.get_metadata("reply-by")
+                    )
+
+                    if datetime.now() + timedelta(seconds=10) > response_reply_by:
+                        log("Not enough time to process")
+                        responses_received += 1
+                        continue
+
                     transtainer_proposals[str(response.sender)] = response_body
                     reply_by = min(reply_by, response_reply_by)
                 elif isinstance(response_body, ContainerArrivalRefuseMsgBody):
