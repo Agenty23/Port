@@ -213,6 +213,7 @@ class CraneAgent(LoggingAgent):
                 date (datetime): Estimated arrival date.
                 max_responses (int): Maximum number of responses expected.
             """
+            super().__init__()
             self.port_jid = port_jid
             self.reply_by = reply_by
             self.thread = thread
@@ -220,10 +221,13 @@ class CraneAgent(LoggingAgent):
             self.date = date
             self.max_responses = max_responses
 
+            
         async def run(self) -> None:
             self.agent: CraneAgent
             log = self.agent.log
+            
 
+            
             transtainer_proposals = {}
             responses_received = 0
             reply_by = self.reply_by + timedelta(seconds=60)
@@ -323,6 +327,7 @@ class CraneAgent(LoggingAgent):
                 reply_by (datetime | str): Time by which all responses should be received.
                 accepted_transtainers (list[str]): List of transtainers that will realize the proposal.
             """
+            super().__init__()
             self.thread = thread
             self.reply_by = reply_by
             self.accepted_transtainers = accepted_transtainers

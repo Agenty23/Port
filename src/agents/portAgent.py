@@ -192,12 +192,14 @@ class PortAgent(LoggingAgent):
                 date (datetime): Estimated arrival date.
                 max_responses (int): Maximum number of proposals/refuses to wait for.
             """
+            super().__init__()
             self.operator_jid = operator_jid
             self.reply_by = reply_by
             self.thread = thread
             self.container_ids = container_ids
             self.date = date
             self.max_responses = max_responses
+
 
         async def run(self) -> None:
             self.agent: PortAgent
@@ -302,6 +304,7 @@ class PortAgent(LoggingAgent):
                 reply_by (datetime | str): Time by which the operator should accept the proposal.
                 accepted_cranes (list[str]): List of cranes that will realize the proposal.
             """
+            super().__init__()
             self.thread = thread
             self.reply_by = reply_by
             self.accepted_cranes = accepted_cranes

@@ -152,7 +152,7 @@ class TranstainerAgent(LoggingAgent):
             )
             proposal_reply_by = datetime.now() + timedelta(seconds=60)
 
-            log(f"Proposing cost: {cost} for {container_count} containers")
+            log(f"Proposing cost: {cost} for {container_count} containers. Thread: {cfp.thread}")
             await self.send(
                 ContainerArrivalProposeMsgBody(cost, container_count).create_message(
                     cfp.sender, proposal_reply_by, cfp.thread
