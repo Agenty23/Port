@@ -20,7 +20,7 @@ def SERVICES_LIST_QUERY_REF_TEMPLATE() -> Template:
     return t
 
 
-def SERVICES_LIST_INFORM_TEMPLATE() -> Template:
+def SERVICES_LIST_INFORM_TEMPLATE(service_type: Optional[str] = None) -> Template:
     """
     Response message template for services list query from yellow pages agent.
 
@@ -30,6 +30,8 @@ def SERVICES_LIST_INFORM_TEMPLATE() -> Template:
     t = Template()
     t.set_metadata("performative", "inform")
     t.set_metadata("topic", "services_list")
+    if service_type:
+        t.set_metadata("service_type", service_type)
     return t
 
 
@@ -104,8 +106,10 @@ class ServicesListInformMsgBody(MsgBody):
         """
         self.service_jids = service_jids
 
-    def create_message(self, to: Union[JID, str]) -> Message:
+    def create_message(self, to: Union[JID, str], service_type: Optional[str]) -> Message:
         msg = super().create_message(to)
         msg.set_metadata("performative", "inform")
         msg.set_metadata("topic", "services_list")
+        if service_type:
+            msg.set_metadata("service_type", service_type)
         return msg

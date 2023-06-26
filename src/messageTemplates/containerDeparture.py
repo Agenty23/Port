@@ -71,6 +71,23 @@ def CONTAINER_DEPARTURE_REJECT_PROPOSAL_TEMPLATE(
     t.set_metadata("topic", "container_departure")
     return t
 
+def CONTAINER_DEPARTURE_ACCEPT_PROPOSAL_TEMPLATE(
+    thread: Optional[str] = None,
+) -> Template:
+    """ 
+    Template for container departure accept proposal message.
+    
+    Args:
+        thread (str, optional): Thread ID used for accepting only given conversation.
+
+    Accepts:
+        - ContainerDepartureAcceptProposalMsgBody
+    """
+    t = Template(thread=thread)
+    t.set_metadata("performative", "accept_proposal")
+    t.set_metadata("topic", "container_departure")
+    return t
+
 
 class ContainerDepartureCFPMsgBody(MsgBody):
     def __init__(self, container_ids: list[str], date: datetime, transfer_point_id: Optional[int] = None):

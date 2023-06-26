@@ -256,7 +256,7 @@ class TranstainerAgent(LoggingAgent):
     # endregion
 
     # region: Container departure behaviour
-    class ContainerDepartureCFPBehaviour(CyclicBehaviour):
+    class ContainerDepartureCFPBehav(CyclicBehaviour):
         def __init__(self):
             """Behaviour handling container departure CFPs from cranes."""
             super().__init__()
@@ -391,14 +391,14 @@ class TranstainerAgent(LoggingAgent):
                 )
                 return
 
-            transtainer_cost = calculateTranstainerDepartureCost(self, self.date, container_ids, crane_proposals)
             container_ids = [container_id for container_id in self.agent.yard.flatten() if container_id in self.container_ids]
+            transtainer_cost = calculateTranstainerDepartureCost(self, self.date, container_ids, crane_proposals)
 
             log(f"Sending container departure proposal to [{self.port_jid}]")
             await self.send(
                 ContainerDepartureProposeMsgBody(
                     transtainer_cost, container_ids
-                ).create_message(self.port_jid, thread=self.thread)
+                ).create_message(self.port_jid, reply_by, self.thread)
             )
 
             self.agent.add_behaviour(
@@ -444,21 +444,21 @@ class TranstainerAgent(LoggingAgent):
                 if not proposal_response_body:
                     log("Invalid message")
                 elif isinstance(
-                    proposal_response_body, ContainerArrivalAcceptProposalMsgBody
+                    proposal_response_body, ContainerDepartureAcceptProposalMsgBody
                 ):
                     log("Proposal accepted")
                     proposal_accepted = True
                 elif isinstance(
-                    proposal_response_body, ContainerArrivalRejectProposalMsgBody
+                    proposal_response_body, ContainerDepartureRejectProposalMsgBody
                 ):
                     log("Proposal rejected")
                 else:
                     log("Unexpected message")
 
             if proposal_accepted:
-                crane_reply = ContainerArrivalAcceptProposalMsgBody()
+                crane_reply = ContainerDepartureAcceptProposalMsgBody()
             else:
-                crane_reply = ContainerArrivalRejectProposalMsgBody()
+                crane_reply = ContainerDepartureRejectProposalMsgBody()
 
             for crane in self.cranes:
                 await self.send(crane_reply.create_message(crane, thread=self.thread))

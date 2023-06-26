@@ -26,6 +26,8 @@ from messageTemplates.containerArrival import (
 )
 from messageTemplates.containerDeparture import (
     CONTAINER_DEPARTURE_CFP_TEMPLATE,
+    CONTAINER_DEPARTURE_ACCEPT_PROPOSAL_TEMPLATE,
+    CONTAINER_DEPARTURE_REJECT_PROPOSAL_TEMPLATE,
     ContainerDepartureProposeMsgBody,
     ContainerDepartureAcceptProposalMsgBody,
     ContainerDepartureRejectProposalMsgBody,
@@ -120,7 +122,7 @@ class CraneAgent(LoggingAgent):
             self.agent.add_behaviour(
                 self.agent.ContainerDepartureCFPBehav(),
                 template=(
-                    CONTAINER_DEPARTURE_CFP_TEMPLATE() | SERVICES_LIST_INFORM_TEMPLATE()
+                    CONTAINER_DEPARTURE_CFP_TEMPLATE()
                 ),
             )
 
@@ -408,7 +410,7 @@ class CraneAgent(LoggingAgent):
                 return
 
             
-            crane_cost = calculateCraneDepartureCost(self.date, cfp_body.transfer_point_id)
+            crane_cost = calculateCraneDepartureCost(cfp_body.date, cfp_body.transfer_point_id)
             proposal_reply_by = datetime.now() + timedelta(seconds=60)
 
             log(f"Proposing cost: {crane_cost}.")
@@ -419,12 +421,12 @@ class CraneAgent(LoggingAgent):
             )
 
             self.agent.add_behaviour(
-                self.agent.ContainerArrivalAcceptProposalBehav(
-                    cfp.thread, proposal_reply_by, containers_placement
+                self.agent.ContainerDepartureAcceptProposalBehav(
+                    cfp.thread, proposal_reply_by
                 ),
                 template=(
-                    CONTAINER_ARRIVAL_ACCEPT_PROPOSAL_TEMPLATE(cfp.thread)
-                    | CONTAINER_ARRIVAL_REJECT_PROPOSAL_TEMPLATE(cfp.thread)
+                    CONTAINER_DEPARTURE_ACCEPT_PROPOSAL_TEMPLATE(cfp.thread)
+                    | CONTAINER_DEPARTURE_REJECT_PROPOSAL_TEMPLATE(cfp.thread)
                 ),
             )
 

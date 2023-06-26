@@ -32,6 +32,7 @@ from messageTemplates.containerDeparture import (
     ContainerDepartureProposeMsgBody,
     ContainerDepartureRefuseMsgBody,
     ContainerDepartureRejectProposalMsgBody,
+    ContainerDepartureAcceptProposalMsgBody,
 )
 from messageTemplates.msgDecoder import decode_msg
 from datetime import datetime, timedelta
@@ -101,13 +102,15 @@ class PortAgent(LoggingAgent):
             self.agent.add_behaviour(
                 self.agent.ContainerArrivalCFPBehav(),
                 template=(
-                    CONTAINER_ARRIVAL_CFP_TEMPLATE() | SERVICES_LIST_INFORM_TEMPLATE()
+                    CONTAINER_ARRIVAL_CFP_TEMPLATE()
+                    | SERVICES_LIST_INFORM_TEMPLATE("crane")
                 ),
             )
             self.agent.add_behaviour(
                 self.agent.ContainerDepartureCFPBehav(),
                 template=(
-                    CONTAINER_DEPARTURE_CFP_TEMPLATE() | SERVICES_LIST_INFORM_TEMPLATE()
+                    CONTAINER_DEPARTURE_CFP_TEMPLATE()
+                    | SERVICES_LIST_INFORM_TEMPLATE("transtainer")
                 ),
             )
 
@@ -425,7 +428,7 @@ class PortAgent(LoggingAgent):
                 )
 
             self.agent.add_behaviour(
-                self.agent.ContainerArrivalProposalBehav(
+                self.agent.ContainerDepartureProposalBehav(
                     str(cfp.sender),
                     cfp_reply_by,
                     cfp.thread,
@@ -525,14 +528,18 @@ class PortAgent(LoggingAgent):
 
             port_cost = calculatePortDepartureCost(self.date, transtainer_proposals)
             container_ids = [
-                item for sublist in transtainer_proposals.values() for item in sublist
+                item
+                for sublist in [
+                    x.container_ids for x in list(transtainer_proposals.values())
+                ]
+                for item in sublist
             ]
 
             log(f"Sending container departure proposal to [{self.operator_jid}]")
             await self.send(
                 ContainerDepartureProposeMsgBody(
                     port_cost, container_ids
-                ).create_message(self.operator_jid, thread=self.thread)
+                ).create_message(self.operator_jid, reply_by=reply_by, thread=self.thread)
             )
 
             self.agent.add_behaviour(
@@ -567,7 +574,9 @@ class PortAgent(LoggingAgent):
             log = self.agent.log
 
             while datetime.now() < self.reply_by:
-                proposal_response = await self.receive(timeout=(self.reply_by - datetime.now()).seconds)
+                proposal_response = await self.receive(
+                    timeout=(self.reply_by - datetime.now()).seconds
+                )
                 if proposal_response:
                     break
 
@@ -580,23 +589,25 @@ class PortAgent(LoggingAgent):
                 if not proposal_response_body:
                     log("Invalid message")
                 elif isinstance(
-                    proposal_response_body, ContainerArrivalAcceptProposalMsgBody
+                    proposal_response_body, ContainerDepartureAcceptProposalMsgBody
                 ):
                     log("Proposal accepted")
                     proposal_accepted = True
                 elif isinstance(
-                    proposal_response_body, ContainerArrivalRejectProposalMsgBody
+                    proposal_response_body, ContainerDepartureRejectProposalMsgBody
                 ):
                     log("Proposal rejected")
                 else:
                     log("Unexpected message")
 
             if proposal_accepted:
-                transtainer_reply = ContainerArrivalAcceptProposalMsgBody()
+                transtainer_reply = ContainerDepartureAcceptProposalMsgBody()
             else:
-                transtainer_reply = ContainerArrivalRejectProposalMsgBody()
+                transtainer_reply = ContainerDepartureRejectProposalMsgBody()
 
             for transtainer in self.transtainers:
-                await self.send(transtainer_reply.create_message(transtainer, thread=self.thread))
+                await self.send(
+                    transtainer_reply.create_message(transtainer, thread=self.thread)
+                )
 
     # endregion

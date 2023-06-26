@@ -88,7 +88,7 @@ try:
     )
     operator.start().result()
 
-    sleep(2)
+    sleep(10)
 
     operator2 = OperatorAgent(
         operator_base_jid + "/2",

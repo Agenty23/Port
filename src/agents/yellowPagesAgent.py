@@ -93,6 +93,7 @@ class YellowPagesAgent(LoggingAgent):
 
             if isinstance(body, PortListQueryRefMsgBody):
                 log(f"Received port list request for location {body.location}")
+                service_type = "port"
                 services = [
                     x
                     for x in self.agent.port_registrations
@@ -102,6 +103,7 @@ class YellowPagesAgent(LoggingAgent):
                 log(
                     f"Received crane list request for location {body.location}, docks {body.dock_ids} and transfer points {body.transfer_point_ids}"
                 )
+                service_type = "crane"
                 services = [
                     x
                     for x in self.agent.crane_registrations
@@ -113,12 +115,13 @@ class YellowPagesAgent(LoggingAgent):
                     services = [
                         x
                         for x in services
-                        if x.transfer_point_id in body.transfer_point_ids
+                        if any(x in body.transfer_point_ids for x in x.transfer_point_ids)
                     ]
             elif isinstance(body, TranstainerListQueryRefMsgBody):
                 log(
                     f"Received transtainer list request for location {body.location} and transfer points {body.transfer_point_ids}"
                 )
+                service_type = "transtainer"
                 services = [
                     x
                     for x in self.agent.transtainer_registrations
@@ -136,5 +139,5 @@ class YellowPagesAgent(LoggingAgent):
 
             services_jids = [x.jid for x in services]
             await self.send(
-                ServicesListInformMsgBody(services_jids).create_message(str(msg.sender))
+                ServicesListInformMsgBody(services_jids).create_message(str(msg.sender), service_type)
             )
