@@ -109,7 +109,7 @@ class OperatorAgent(LoggingAgent):
             self.agent: OperatorAgent
             log = self.agent.log
             log(f"Requesting pick up of containers (on {self.agent.date}):")
-            log(",".join(self.agent.container_ids))
+            log(str(self.agent.container_ids))
 
             port_list = await self.agent.get_port_list(self, self.agent.location)
             if port_list is None:

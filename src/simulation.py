@@ -46,17 +46,18 @@ crane = CraneAgent(
 crane.start()
 
 container_ids_pool = [''.join(rand.choices(string.ascii_letters + string.digits, k=5)) for i in range(3 * 3 * 3 * num_of_transtainers)]
-container_ids_taken = set()
+container_ids_taken = list()
 
 trainstainers = []
 for i in range(num_of_transtainers):
-    yard = np.empty((3,3,3), dtype=str)
+    yard = np.ndarray((3, 3, 3), dtype=object)
+    yard.fill("")
     for x in range(3):
         for y in range(3):
             for z in range(3):
                 if rand.random() > 0.5:
                     yard[x][y][z] = container_ids_pool.pop(rand.randint(0, len(container_ids_pool) - 1))
-                    container_ids_taken.add(yard[x][y][z])
+                    container_ids_taken.append(yard[x][y][z])
                 else:
                     break
                 
@@ -66,7 +67,7 @@ for i in range(num_of_transtainers):
             transtainer_base_jid + "/" + str(i),
             transtainer_password,
             "Gdansk",
-            [i + 1],
+            i + 1,
             yellow_pages_jid,
             yard
         )
@@ -80,25 +81,25 @@ try:
     #     operator_base_jid + "/1",
     #     operator_password,
     #     OperatorAgentAction.PICKUP,
-    #     rand.sample(container_ids_taken, 3),
+    #     rand.choices(container_ids_taken, k=3),
     #     datetime.now(),
     #     "Gdansk",
     #     yellow_pages_jid
     # )
     # operator.start().result()
 
-    # sleep(5)
+    sleep(5)
 
-    # operator = OperatorAgent(
-    #     operator_base_jid + "/2",
-    #     operator_password,
-    #     OperatorAgentAction.DROP,
-    #     rand.sample(container_ids_pool, 3),
-    #     datetime.now(),
-    #     "Gdansk",
-    #     yellow_pages_jid
-    # )
-    # operator.start().result()
+    operator = OperatorAgent(
+        operator_base_jid + "/2",
+        operator_password,
+        OperatorAgentAction.DROPOFF,
+        rand.choices(container_ids_pool, k=3),
+        datetime.now(),
+        "Gdansk",
+        yellow_pages_jid
+    )
+    operator.start().result()
     
     while True:
         sleep(1)

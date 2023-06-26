@@ -160,7 +160,7 @@ class CraneAgent(LoggingAgent):
             transtainer_list = await self.agent.get_transtainers_list(self)
             if not transtainer_list:
                 log("No transtainers available")
-                self.send(
+                await self.send(
                     ContainerArrivalRefuseMsgBody().create_message(
                         cfp.sender, thread=cfp.thread
                     )

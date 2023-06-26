@@ -136,7 +136,7 @@ class TranstainerAgent(LoggingAgent):
                 log("Not enough time to process")
                 return
 
-            free_places = self.agent.yard.count_nonzero()
+            free_places = len([x for x in self.agent.yard.flatten() if x.strip() == ""])
             if free_places == 0:
                 log("No free places")
                 await self.send(
@@ -148,16 +148,24 @@ class TranstainerAgent(LoggingAgent):
 
             container_count = min(free_places, len(cfp_body.container_ids))
             cost, containers_placement = calculateTranstainerInCost(
-                self.agent.yard, container_count
+                self.agent.yard, cfp_body.date, container_count
             )
+            proposal_reply_by = datetime.now() + timedelta(seconds=60)
+
             log(f"Proposing cost: {cost} for {container_count} containers")
             await self.send(
                 ContainerArrivalProposeMsgBody(cost, container_count).create_message(
-                    cfp.sender, datetime.now() + timedelta(seconds=60), cfp.thread
+                    cfp.sender, proposal_reply_by, cfp.thread
+                ),
+            )
+
+            self.agent.add_behaviour(
+                self.agent.ContainerArrivalAcceptProposalBehav(
+                    cfp.thread, proposal_reply_by, containers_placement
                 ),
                 template=(
-                    CONTAINER_ARRIVAL_ACCEPT_PROPOSAL_TEMPLATE(thread=cfp.thread)
-                    | CONTAINER_ARRIVAL_REJECT_PROPOSAL_TEMPLATE(thread=cfp.thread)
+                    CONTAINER_ARRIVAL_ACCEPT_PROPOSAL_TEMPLATE(cfp.thread)
+                    | CONTAINER_ARRIVAL_REJECT_PROPOSAL_TEMPLATE(cfp.thread)
                 ),
             )
 
@@ -169,7 +177,7 @@ class TranstainerAgent(LoggingAgent):
             containers_placement: dict[str, tuple[int, int, int]],
         ):
             """Behaviour handling container arrival proposal acceptance / rejection from cranes.
-            
+
             Args:
                 thread (str): Thread ID of the conversation.
                 reply_by (datetime | str): Deadline for reply.

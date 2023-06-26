@@ -91,14 +91,14 @@ class YellowPagesAgent(LoggingAgent):
             if not body:
                 return
 
-            if type(body) is PortListQueryRefMsgBody:
+            if isinstance(body, PortListQueryRefMsgBody):
                 log(f"Received port list request for location {body.location}")
                 services = [
                     x
                     for x in self.agent.port_registrations
                     if body.location == x.location
                 ]
-            elif type(body) is CraneListQueryRefMsgBody:
+            elif isinstance(body, CraneListQueryRefMsgBody):
                 log(
                     f"Received crane list request for location {body.location}, docks {body.dock_ids} and transfer points {body.transfer_point_ids}"
                 )
@@ -115,7 +115,7 @@ class YellowPagesAgent(LoggingAgent):
                         for x in services
                         if x.transfer_point_id in body.transfer_point_ids
                     ]
-            elif type(body) is TranstainerListQueryRefMsgBody():
+            elif isinstance(body, TranstainerListQueryRefMsgBody):
                 log(
                     f"Received transtainer list request for location {body.location} and transfer points {body.transfer_point_ids}"
                 )
