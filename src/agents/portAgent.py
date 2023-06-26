@@ -32,13 +32,12 @@ from messageTemplates.containerDeparture import (
     ContainerDepartureProposeMsgBody,
     ContainerDepartureRefuseMsgBody,
     ContainerDepartureRejectProposalMsgBody,
-    ContainerDepartureAcceptProposalMsgBody,
 )
 from messageTemplates.msgDecoder import decode_msg
 from datetime import datetime, timedelta
 from typing import Union
 from aioxmpp import JID
-from logic.portCost import calculatePortArrivalCost, calculatePortDepartureCost
+from logic.port import calculatePortArrivalCost, calculatePortDepartureCost
 
 
 class PortAgent(LoggingAgent):
@@ -451,7 +450,7 @@ class PortAgent(LoggingAgent):
             max_responses: int,
         ):
             """
-            Behaviour handling container departure proposals from cranes.
+            Behaviour handling container departure proposals from transtainers.
 
             Args:
                 operator_jid (str): JID of the operator.

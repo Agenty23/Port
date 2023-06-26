@@ -27,7 +27,7 @@ from messageTemplates.containerArrival import (
 from messageTemplates.msgDecoder import decode_msg
 from datetime import datetime, timedelta
 from time import time
-from logic.craneCost import calculateCraneCost
+from logic.crane import calculateCraneCost
 from typing import Union
 from aioxmpp import JID
 
