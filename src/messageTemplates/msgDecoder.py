@@ -6,6 +6,7 @@ from messageTemplates.msgBody import MsgBody
 import messageTemplates.agentRegistration as ar
 import messageTemplates.servicesListRequest as slr
 import messageTemplates.containerArrival as cat
+import messageTemplates.containerDeparture as cdt
 
 msg_body_classes = {
     "PortRegistrationRequestMsgBody" : ar.PortRegistrationRequestMsgBody,
@@ -24,6 +25,12 @@ msg_body_classes = {
     "ContainerArrivalProposeMsgBody" : cat.ContainerArrivalProposeMsgBody,
     "ContainerArrivalRejectProposalMsgBody" : cat.ContainerArrivalRejectProposalMsgBody,
     "ContainerArrivalAcceptProposalMsgBody" : cat.ContainerArrivalAcceptProposalMsgBody,
+
+    "ContainerDepartureCFPMsgBody" : cdt.ContainerDepartureCFPMsgBody,
+    "ContainerDepartureRefuseMsgBody" : cdt.ContainerDepartureRefuseMsgBody,
+    "ContainerDepartureProposeMsgBody" : cdt.ContainerDepartureProposeMsgBody,
+    "ContainerDepartureRejectProposalMsgBody" : cdt.ContainerDepartureRejectProposalMsgBody,
+    "ContainerDepartureAcceptProposalMsgBody" : cdt.ContainerDepartureAcceptProposalMsgBody,
 }
 
 def decode_msg(msg: Message) -> Optional[MsgBody]:

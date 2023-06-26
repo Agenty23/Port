@@ -75,18 +75,18 @@ for i in range(num_of_transtainers):
     trainstainers[i].start().result()
 
 try:
-    # sleep(5)
+    sleep(2)
 
-    # operator = OperatorAgent(
-    #     operator_base_jid + "/1",
-    #     operator_password,
-    #     OperatorAgentAction.PICKUP,
-    #     rand.choices(container_ids_taken, k=3),
-    #     datetime.now(),
-    #     "Gdansk",
-    #     yellow_pages_jid
-    # )
-    # operator.start().result()
+    operator = OperatorAgent(
+        operator_base_jid + "/1",
+        operator_password,
+        OperatorAgentAction.PICKUP,
+        rand.choices(container_ids_taken, k=3),
+        datetime.now(),
+        "Gdansk",
+        yellow_pages_jid
+    )
+    operator.start().result()
 
     sleep(2)
 

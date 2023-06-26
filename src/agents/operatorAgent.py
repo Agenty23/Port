@@ -1,5 +1,5 @@
 from agents.loggingAgent import LoggingAgent
-from spade.behaviour import OneShotBehaviour, CyclicBehaviour
+from spade.behaviour import OneShotBehaviour
 from datetime import datetime, timedelta
 from messageTemplates.servicesListRequest import (
     SERVICES_LIST_INFORM_TEMPLATE,
@@ -14,6 +14,15 @@ from messageTemplates.containerArrival import (
     ContainerArrivalRejectProposalMsgBody,
     ContainerArrivalProposeMsgBody,
     ContainerArrivalRefuseMsgBody,
+)
+from messageTemplates.containerDeparture import (
+    ContainerDepartureCFPMsgBody,
+    CONTAINER_DEPARTURE_PROPOSE_TEMPLATE,
+    CONTAINER_DEPARTURE_REFUSE_TEMPLATE,
+    ContainerDepartureAcceptProposalMsgBody,
+    ContainerDepartureRejectProposalMsgBody,
+    ContainerDepartureProposeMsgBody,
+    ContainerDepartureRefuseMsgBody,
 )
 from uuid import uuid4
 from enum import Enum
@@ -62,7 +71,8 @@ class OperatorAgent(LoggingAgent):
                 self.PickupContainerBehav(),
                 template=(
                     SERVICES_LIST_INFORM_TEMPLATE()
-                    #TODO
+                    | CONTAINER_DEPARTURE_PROPOSE_TEMPLATE()
+                    | CONTAINER_DEPARTURE_REFUSE_TEMPLATE()
                 ),
             )
         elif self.action is OperatorAgentAction.DROPOFF:
@@ -119,8 +129,57 @@ class OperatorAgent(LoggingAgent):
                 log("No port available.")
                 return
 
-            reply_by = datetime.now() + timedelta(seconds=60)
-            # TODO
+            reply_by = datetime.now() + timedelta(seconds=120)
+            cfp = ContainerDepartureCFPMsgBody(
+                self.agent.container_ids, self.agent.date
+            )
+            thread = uuid4().hex
+            for port in port_list:
+                await self.send(
+                    cfp.create_message(port, reply_by=reply_by, thread=thread)
+                )
+                log(f"Container departure CFP sent to port [{port}].")
+
+            log(f"Waiting for responses till {reply_by}...")
+            cost_port_map = {}
+            while datetime.now() <= reply_by:
+                if (reply := await self.receive(timeout=1)) is not None:
+                    reply_body = decode_msg(reply)
+
+                    if reply.thread != thread or reply_body is None:
+                        log(f"Unexpected message from {reply.sender}")
+                    elif isinstance(reply_body, ContainerDepartureProposeMsgBody):
+                        log(f"Container departure proposition from [{reply.sender}]")
+                        cost_port_map[str(reply.sender)] = reply_body.cost
+                        break
+                    elif isinstance(reply_body, ContainerDepartureRefuseMsgBody):
+                        log(f"Container departure refused by [{reply.sender}]")
+                        break
+                    else:
+                        log(f"Unexpected message from {reply.sender}")
+
+            if len(cost_port_map) == 0:
+                log("No port accepted the request.")
+                return
+
+            min_cost_port = min(cost_port_map, key=cost_port_map.get)
+            log(
+                f"Container departure accepted from [{min_cost_port}] with cost {cost_port_map[min_cost_port]}"
+            )
+
+            await self.send(
+                ContainerDepartureAcceptProposalMsgBody().create_message(
+                    min_cost_port, thread=thread
+                )
+            )
+
+            for port in cost_port_map:
+                if port != min_cost_port:
+                    await self.send(
+                        ContainerDepartureRejectProposalMsgBody().create_message(
+                            port, thread=thread
+                        )
+                    )
 
         async def on_end(self) -> None:
             self.agent: OperatorAgent
