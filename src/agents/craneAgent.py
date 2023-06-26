@@ -24,10 +24,16 @@ from messageTemplates.containerArrival import (
     ContainerArrivalRejectProposalMsgBody,
     ContainerArrivalAcceptProposalMsgBody,
 )
+from messageTemplates.containerDeparture import (
+    CONTAINER_DEPARTURE_CFP_TEMPLATE,
+    ContainerDepartureProposeMsgBody,
+    ContainerDepartureAcceptProposalMsgBody,
+    ContainerDepartureRejectProposalMsgBody,
+)
 from messageTemplates.msgDecoder import decode_msg
 from datetime import datetime, timedelta
 from time import time
-from logic.crane import calculateCraneCost
+from logic.crane import calculateCraneArrivalCost, calculateCraneDepartureCost
 from typing import Union
 from aioxmpp import JID
 
@@ -109,6 +115,12 @@ class CraneAgent(LoggingAgent):
                 self.agent.ContainerArrivalCFPBehav(),
                 template=(
                     CONTAINER_ARRIVAL_CFP_TEMPLATE() | SERVICES_LIST_INFORM_TEMPLATE()
+                ),
+            )
+            self.agent.add_behaviour(
+                self.agent.ContainerDepartureCFPBehav(),
+                template=(
+                    CONTAINER_DEPARTURE_CFP_TEMPLATE() | SERVICES_LIST_INFORM_TEMPLATE()
                 ),
             )
 
@@ -274,7 +286,7 @@ class CraneAgent(LoggingAgent):
                 crane_cost,
                 accepted_containers_count,
                 accepted_transtainers,
-            ) = calculateCraneCost(self.date, transtainer_proposals)
+            ) = calculateCraneArrivalCost(self.date, transtainer_proposals)
 
             log(
                 f"Able to accept {accepted_containers_count} containers with cost {crane_cost}."
@@ -368,5 +380,99 @@ class CraneAgent(LoggingAgent):
                 await self.send(
                     transtainer_reply.create_message(transtainer, thread=self.thread)
                 )
+
+    # endregion
+
+    # region Container departure behaviours
+    class ContainerDepartureCFPBehav(CyclicBehaviour):
+        def __init__(self):
+            """Behaviour handling container departure CFPs from transtainer agent."""
+            super().__init__()
+
+        async def run(self) -> None:
+            self.agent: CraneAgent
+            log = self.agent.log
+            cfp = await self.receive(timeout=30)
+            if not cfp:
+                return
+
+            log(f"Received container arrival CFP from [{cfp.sender}]")
+            cfp_body = decode_msg(cfp)
+            if not cfp_body:
+                log("Invalid message")
+                return
+
+            cfp_reply_by = datetime.fromisoformat(cfp.get_metadata("reply-by"))
+            if cfp_reply_by < datetime.now() + timedelta(seconds=10):
+                log("Not enough time to process")
+                return
+
+            
+            crane_cost = calculateCraneDepartureCost(self.date, cfp_body.transfer_point_id)
+            proposal_reply_by = datetime.now() + timedelta(seconds=60)
+
+            log(f"Proposing cost: {crane_cost}.")
+            await self.send(
+                ContainerDepartureProposeMsgBody(crane_cost, []).create_message(
+                    cfp.sender, proposal_reply_by, cfp.thread
+                ),
+            )
+
+            self.agent.add_behaviour(
+                self.agent.ContainerArrivalAcceptProposalBehav(
+                    cfp.thread, proposal_reply_by, containers_placement
+                ),
+                template=(
+                    CONTAINER_ARRIVAL_ACCEPT_PROPOSAL_TEMPLATE(cfp.thread)
+                    | CONTAINER_ARRIVAL_REJECT_PROPOSAL_TEMPLATE(cfp.thread)
+                ),
+            )
+
+    class ContainerDepartureAcceptProposalBehav(OneShotBehaviour):
+        def __init__(
+            self,
+            thread: str,
+            reply_by: datetime
+        ):
+            """
+            Behaviour handling container departure proposal acceptances / rejections from transtainer agent.
+
+            Args:
+                thread (str): Thread ID of the conversation.
+                reply_by (datetime): Time by which the response should be received.
+            """
+            super().__init__()
+            self.thread = thread
+            self.reply_by = reply_by
+
+        async def run(self) -> None:
+            self.agent: CraneAgent
+            log = self.agent.log
+
+            while datetime.now() < self.reply_by:
+                proposal_response = await self.receive(timeout=1)
+                if not proposal_response:
+                    continue
+
+                proposal_response_body = decode_msg(proposal_response)
+                if not proposal_response_body:
+                    log("Invalid message")
+                elif isinstance(
+                    proposal_response_body, ContainerDepartureAcceptProposalMsgBody
+                ):
+                    log("Proposal accepted")
+                    proposal_accepted = True
+                    break
+                elif isinstance(
+                    proposal_response_body, ContainerDepartureRejectProposalMsgBody
+                ):
+                    log("Proposal rejected")
+                    break
+                else:
+                    log("Unexpected message")
+
+            if proposal_accepted:
+                pass
+                # TODO
 
     # endregion

@@ -73,18 +73,20 @@ def CONTAINER_DEPARTURE_REJECT_PROPOSAL_TEMPLATE(
 
 
 class ContainerDepartureCFPMsgBody(MsgBody):
-    def __init__(self, container_ids: list[str], date: datetime):
+    def __init__(self, container_ids: list[str], date: datetime, transfer_point_id: Optional[int] = None):
         """
         Container departure CFP message body.
 
         Args:
             container_ids (list[str]): List of container IDs.
             date (datetime): Date of departure.
+            transfer_point_id (Optional[int], optional): ID of transfer point. Used only for CFP from transtainer to crane.
         """
         self.container_ids = container_ids
         if isinstance(date, datetime):
             date = date.isoformat()
         self.date = date
+        self.transfer_point_id = transfer_point_id
 
     def create_message(
         self, to: Union[JID, str], reply_by: Union[datetime, str], thread: str

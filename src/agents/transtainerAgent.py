@@ -290,7 +290,7 @@ class TranstainerAgent(LoggingAgent):
                 return
 
             container_cfp = ContainerDepartureCFPMsgBody(
-                cfp_body.container_ids, cfp_body.date
+                cfp_body.container_ids, cfp_body.date, self.agent.transfer_point_id
             )
             for crane in crane_list:
                 await self.send(
