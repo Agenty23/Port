@@ -105,7 +105,7 @@ class OperatorAgent(LoggingAgent):
         )
 
         port_list = await parent_behaviour.receive(timeout=30)
-        if port_list is None:
+        if not port_list:
             log("No port available.")
             return None
 
@@ -198,7 +198,7 @@ class OperatorAgent(LoggingAgent):
             log(",".join(self.agent.container_ids))
 
             port_list = await self.agent.get_port_list(self, self.agent.location)
-            if port_list is None:
+            if not port_list:
                 log("No port available.")
                 return
 

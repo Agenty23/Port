@@ -245,9 +245,7 @@ class TranstainerAgent(LoggingAgent):
 
                 if isinstance(msg_body, ContainerArrivalAcceptProposalMsgBody):
                     log("Proposal accepted")
-                    self.agent.yard = rearrangeYard(
-                        self.agent, self.containers_placement
-                    )
+                    rearrangeYard(self.agent, self.containers_placement)
                 elif isinstance(msg_body, ContainerArrivalRejectProposalMsgBody):
                     log("Proposal rejected")
                 else:
@@ -273,13 +271,15 @@ class TranstainerAgent(LoggingAgent):
             if not cfp_body:
                 log("Invalid message")
                 return
-            
+
             cfp_reply_by = datetime.fromisoformat(cfp.get_metadata("reply-by"))
             if cfp_reply_by < datetime.now() + timedelta(seconds=10):
                 log("Not enough time to process")
                 return
-            
-            if not any([x in self.agent.yard.flatten() for x in cfp_body.container_ids]):
+
+            if not any(
+                [x in self.agent.yard.flatten() for x in cfp_body.container_ids]
+            ):
                 log("Containers not in yard")
                 await self.send(
                     ContainerDepartureRefuseMsgBody().create_message(
@@ -359,11 +359,15 @@ class TranstainerAgent(LoggingAgent):
             crane_proposals: dict[str, ContainerDepartureProposeMsgBody] = {}
             responses_received = 0
             reply_by = datetime.now() + timedelta(seconds=60)
-            while responses_received < self.max_responses and datetime.now() < self.reply_by:
-                response = await self.receive(timeout=(self.reply_by - datetime.now()).seconds)
+            while (
+                responses_received < self.max_responses
+                and datetime.now() < self.reply_by
+            ):
+                response = await self.receive(
+                    timeout=(self.reply_by - datetime.now()).seconds
+                )
                 if not response:
                     continue
-
 
                 response_body = decode_msg(response)
                 if not response_body:
@@ -381,7 +385,9 @@ class TranstainerAgent(LoggingAgent):
                     )
                     responses_received += 1
                     crane_proposals[str(response.sender)] = response_body
-                    response_reply_by = datetime.fromisoformat(response.get_metadata("reply-by"))
+                    response_reply_by = datetime.fromisoformat(
+                        response.get_metadata("reply-by")
+                    )
                     reply_by = min(reply_by, response_reply_by)
                 elif isinstance(response_body, ContainerDepartureRefuseMsgBody):
                     log(
@@ -400,8 +406,14 @@ class TranstainerAgent(LoggingAgent):
                 )
                 return
 
-            container_ids = [container_id for container_id in self.agent.yard.flatten() if container_id in self.container_ids]
-            transtainer_cost = calculateTranstainerDepartureCost(self, self.date, container_ids, crane_proposals)
+            container_ids = [
+                container_id
+                for container_id in self.agent.yard.flatten()
+                if container_id in self.container_ids
+            ]
+            transtainer_cost = calculateTranstainerDepartureCost(
+                self, self.date, container_ids, crane_proposals
+            )
 
             log(f"Sending container departure proposal to [{self.port_jid}]")
             await self.send(
@@ -440,7 +452,9 @@ class TranstainerAgent(LoggingAgent):
             log = self.agent.log
 
             while datetime.now() < self.reply_by:
-                proposal_response = await self.receive(timeout=(self.reply_by - datetime.now()).seconds)
+                proposal_response = await self.receive(
+                    timeout=(self.reply_by - datetime.now()).seconds
+                )
                 if proposal_response:
                     break
 
