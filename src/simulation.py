@@ -90,7 +90,7 @@ try:
 
     sleep(2)
 
-    operator = OperatorAgent(
+    operator2 = OperatorAgent(
         operator_base_jid + "/2",
         operator_password,
         OperatorAgentAction.DROPOFF,
@@ -99,7 +99,7 @@ try:
         "Gdansk",
         yellow_pages_jid
     )
-    operator.start().result()
+    operator2.start().result()
     
     while True:
         sleep(1)
@@ -110,5 +110,6 @@ except KeyboardInterrupt:
     crane.stop()
     for transtainer in trainstainers:
         transtainer.stop()
-    # operator.stop()
+    operator.stop()
+    operator2.stop()
     yellow_pages.stop()
