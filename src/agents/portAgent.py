@@ -233,7 +233,7 @@ class PortAgent(LoggingAgent):
                 if isinstance(response_body, ContainerArrivalProposeMsgBody):
                     log(f"Received container arrival proposal from [{response.sender}]")
                     responses_received += 1
-                    crane_proposals[response.sender] = response_body
+                    crane_proposals[str(response.sender)] = response_body
                     reply_by = min(reply_by, response_reply_by)
                 elif isinstance(response_body, ContainerArrivalRefuseMsgBody):
                     log(f"Received container arrival refuse from [{response.sender}]")
@@ -243,7 +243,7 @@ class PortAgent(LoggingAgent):
 
             if not crane_proposals:
                 log("No proposals received")
-                self.send(
+                await self.send(
                     ContainerArrivalRefuseMsgBody().create_message(
                         self.operator_jid, thread=self.thread
                     )
@@ -256,10 +256,9 @@ class PortAgent(LoggingAgent):
                 accepted_cranes,
             ) = calculatePortCost(self.date, crane_proposals)
 
-            log(
-                f"Able to accept {accepted_containers_count} containers with cost {port_cost}. Sending container arrival proposal to [{self.operator_jid}]."
-            )
-            self.send(
+            log(f"Able to accept {accepted_containers_count} containers with cost {port_cost}.") 
+            log(f"Sending container arrival proposal to [{self.operator_jid}].")
+            await self.send(
                 ContainerArrivalProposeMsgBody(
                     port_cost,
                     accepted_containers_count,
@@ -272,7 +271,7 @@ class PortAgent(LoggingAgent):
 
             for crane in crane_proposals.keys():
                 if str(crane) not in accepted_cranes:
-                    self.send(
+                    await self.send(
                         ContainerArrivalRejectProposalMsgBody().create_message(
                             crane, thread=self.thread
                         )
@@ -344,6 +343,6 @@ class PortAgent(LoggingAgent):
                 crane_reply = ContainerArrivalRejectProposalMsgBody()
 
             for crane in self.accepted_cranes:
-                self.send(crane_reply.create_message(crane, thread=self.thread))
+                await self.send(crane_reply.create_message(crane, thread=self.thread))
 
     # endregion

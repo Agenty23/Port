@@ -152,7 +152,7 @@ class TranstainerAgent(LoggingAgent):
             )
             proposal_reply_by = datetime.now() + timedelta(seconds=60)
 
-            log(f"Proposing cost: {cost} for {container_count} containers. Thread: {cfp.thread}")
+            log(f"Proposing cost: {cost} for {container_count} containers.")
             await self.send(
                 ContainerArrivalProposeMsgBody(cost, container_count).create_message(
                     cfp.sender, proposal_reply_by, cfp.thread
@@ -207,7 +207,7 @@ class TranstainerAgent(LoggingAgent):
                 if isinstance(msg_body, ContainerArrivalAcceptProposalMsgBody):
                     log("Proposal accepted")
                     self.agent.yard = rearrangeYard(
-                        self.agent.yard, self.containers_placement
+                        self.agent, self.containers_placement
                     )
                 elif isinstance(msg_body, ContainerArrivalRejectProposalMsgBody):
                     log("Proposal rejected")

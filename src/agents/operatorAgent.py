@@ -12,6 +12,8 @@ from messageTemplates.containerArrival import (
     CONTAINER_ARRIVAL_REFUSE_TEMPLATE,
     ContainerArrivalAcceptProposalMsgBody,
     ContainerArrivalRejectProposalMsgBody,
+    ContainerArrivalProposeMsgBody,
+    ContainerArrivalRefuseMsgBody,
 )
 from uuid import uuid4
 from enum import Enum
@@ -60,8 +62,7 @@ class OperatorAgent(LoggingAgent):
                 self.PickupContainerBehav(),
                 template=(
                     SERVICES_LIST_INFORM_TEMPLATE()
-                    | CONTAINER_ARRIVAL_PROPOSE_TEMPLATE()
-                    | CONTAINER_ARRIVAL_REFUSE_TEMPLATE()
+                    #TODO
                 ),
             )
         elif self.action is OperatorAgentAction.DROPOFF:
@@ -69,7 +70,9 @@ class OperatorAgent(LoggingAgent):
                 self.DropoffContainerBehav(),
                 template=(
                     SERVICES_LIST_INFORM_TEMPLATE()
-                ),  # TODO: add dropoff template
+                    | CONTAINER_ARRIVAL_PROPOSE_TEMPLATE()
+                    | CONTAINER_ARRIVAL_REFUSE_TEMPLATE()
+                ),
             )
         else:
             raise ValueError("Unknown action")
@@ -140,7 +143,7 @@ class OperatorAgent(LoggingAgent):
                 log("No port available.")
                 return
 
-            reply_by = datetime.now() + timedelta(seconds=60)
+            reply_by = datetime.now() + timedelta(seconds=120)
             cfp = ContainerArrivalCFPMsgBody(self.agent.container_ids, self.agent.date)
             thread = uuid4().hex
             for port in port_list:
@@ -157,11 +160,13 @@ class OperatorAgent(LoggingAgent):
 
                     if reply.thread != thread or reply_body is None:
                         log(f"Unexpected message from {reply.sender}")
-                    elif isinstance(reply_body, ContainerArrivalAcceptProposalMsgBody):
-                        log(f"Container arrival proposition from {reply.sender}")
+                    elif isinstance(reply_body, ContainerArrivalProposeMsgBody):
+                        log(f"Container arrival proposition from [{reply.sender}]")
                         cost_port_map[str(reply.sender)] = reply_body.cost
-                    elif isinstance(reply_body, ContainerArrivalRejectProposalMsgBody):
-                        log(f"Container arrival refused by {reply.sender}")
+                        break
+                    elif isinstance(reply_body, ContainerArrivalRefuseMsgBody):
+                        log(f"Container arrival refused by [{reply.sender}]")
+                        break
                     else:
                         log(f"Unexpected message from {reply.sender}")
 

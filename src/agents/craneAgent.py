@@ -221,13 +221,10 @@ class CraneAgent(LoggingAgent):
             self.date = date
             self.max_responses = max_responses
 
-            
         async def run(self) -> None:
             self.agent: CraneAgent
             log = self.agent.log
-            
 
-            
             transtainer_proposals = {}
             responses_received = 0
             reply_by = self.reply_by + timedelta(seconds=60)
@@ -256,7 +253,7 @@ class CraneAgent(LoggingAgent):
                 if isinstance(response_body, ContainerArrivalProposeMsgBody):
                     log(f"Received container arrival proposal from [{response.sender}]")
                     responses_received += 1
-                    transtainer_proposals[response.sender] = response_body
+                    transtainer_proposals[str(response.sender)] = response_body
                     reply_by = min(reply_by, response_reply_by)
                 elif isinstance(response_body, ContainerArrivalRefuseMsgBody):
                     log(f"Received container arrival refuse from [{response.sender}]")
@@ -280,9 +277,10 @@ class CraneAgent(LoggingAgent):
             ) = calculateCraneCost(self.date, transtainer_proposals)
 
             log(
-                f"Able to accept {accepted_containers_count} containers with cost {crane_cost}. Sending container arrival proposal to [{self.port_jid}]."
+                f"Able to accept {accepted_containers_count} containers with cost {crane_cost}."
             )
-            self.send(
+            log(f"Sending container arrival proposal to [{self.port_jid}].")
+            await self.send(
                 ContainerArrivalProposeMsgBody(
                     crane_cost,
                     accepted_containers_count,
@@ -295,7 +293,7 @@ class CraneAgent(LoggingAgent):
 
             for crane in transtainer_proposals.keys():
                 if str(crane) not in accepted_transtainers:
-                    self.send(
+                    await self.send(
                         ContainerArrivalRejectProposalMsgBody().create_message(
                             crane, thread=self.thread
                         )
@@ -367,7 +365,7 @@ class CraneAgent(LoggingAgent):
                 transtainer_reply = ContainerArrivalRejectProposalMsgBody()
 
             for transtainer in self.accepted_transtainers:
-                self.send(
+                await self.send(
                     transtainer_reply.create_message(transtainer, thread=self.thread)
                 )
 
