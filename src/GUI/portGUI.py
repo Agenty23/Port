@@ -36,10 +36,10 @@ while True:
         break
  
     graph.erase()
+    graph_value = [130,240,80]
     for i in range(3):
-        graph_value = 210
-        graph.draw_rectangle(top_left=(i * BAR_SPACING + EDGE_OFFSET, graph_value),
+        graph.draw_rectangle(top_left=(i * BAR_SPACING + EDGE_OFFSET, graph_value[i]),
         bottom_right=(i * BAR_SPACING + EDGE_OFFSET + BAR_WIDTH, 0), fill_color=bcols[i])
-        graph.draw_text(text=graph_value, location=(i*BAR_SPACING+EDGE_OFFSET+25, graph_value+10), font='_ 16')
+        graph.draw_text(text=graph_value[i], location=(i*BAR_SPACING+EDGE_OFFSET+25,graph_value[i]+10), font='_ 16')
  
 window.close()

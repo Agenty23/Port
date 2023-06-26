@@ -1,6 +1,10 @@
 import PySimpleGUI as sg
 import datetime
-window = sg.Window(
+
+isRunning = True
+
+while(isRunning):
+    window = sg.Window(
                 title="Port Container Client",
                 layout=[
                     [sg.Text("Choose operation  "),sg.Combo(["Arrival","Departure"], size = (20,4))],
@@ -22,10 +26,33 @@ window = sg.Window(
                 ],
                 margins=(500, 300),
             )
-event, values = window.read()
+    event, values = window.read()
+    print(event)
+    if(event == 'Cancel' or event == sg.WIN_CLOSED):
+        isRunning = False
+    print(event == 'Submit')
+    if(event == 'Submit'):
+        containerID = values[1]
+        collection = datetime.datetime.strptime(values['Date'], "%Y:%m:%d").date()
+        print(event, values[0], values[1], values[2], values["Date"])
+        window2 = sg.Window(
+                    title="More actions",
+                    layout=[
+                        [sg.Text("Do you want to continue with next container?")],
+                        [sg.Yes(), sg.No()],
+                    ],
+                    margins=(500, 300),
+                    modal=True,
+                )
+        event, values = window2.read()
+        if (event == 'No' or event == sg.WIN_CLOSED):
+            isRunning = False
+        window2.close()
+if(window):
+    window.close()
 
-window.close()
-containerID = values[1]
-collection = datetime.datetime.strptime(input(), "%Y:%d:%m").date()
-print(collection)
-print(event, values[0], values[1], values["Date"])
+
+
+
+
+
